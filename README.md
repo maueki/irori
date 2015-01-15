@@ -5,5 +5,6 @@
 ```
 $ go build
 $ ./go_wiki -bind :9090
-# access http://localhost:9090/hello/goji
 ```
+
+Access to http://localhost:9090/wiki/test/edit
