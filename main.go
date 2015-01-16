@@ -11,12 +11,20 @@ import (
 	"github.com/flosch/pongo2"
 	"github.com/coopernurse/gorp"
 	_ "github.com/mattn/go-sqlite3"
+
+	//"github.com/gorilla/sessions"
 )
 
 type Page struct {
 	Id      int64 `db:"post_id"`
 	Title string
 	Body string
+}
+
+type User struct {
+	Id      int64 `db:"user_id"`
+	Name    string `db:"name"`
+	Password string `db: "password"` // FIXME: plain text
 }
 
 type WikiDb struct {
@@ -84,6 +92,15 @@ func getWikiDb(c web.C) *WikiDb {
 	return c.Env["wikidb"].(*WikiDb)
 }
 
+var signupTpl = pongo2.Must(pongo2.FromFile("view/signup.html"))
+
+func signupHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	err := signupTpl.ExecuteWriter(pongo2.Context{}, w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func main() {
 	db, err := sql.Open("sqlite3", "./wiki.db")
 	if err != nil {
@@ -105,6 +122,8 @@ func main() {
 	wikidb := &WikiDb{
 		DbMap : dbmap,
 	}
+
+	goji.Get("/signup", signupHandler)
 
 	goji.Use(func(c *web.C, h http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
