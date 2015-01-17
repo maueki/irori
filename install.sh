@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 if [ -z $GOPATH ]; then
-    echo "please set $GOPATH"
+    echo "please set \$GOPATH"
     exit 1
 fi
 
