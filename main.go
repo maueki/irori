@@ -101,37 +101,69 @@ func signupHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func signupPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	wikidb := getWikiDb(c)
+	name := r.FormValue("username")
+	password := r.FormValue("password")
+
+	user := &User{Name: name, Password: password}
+	err := wikidb.DbMap.Insert(user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	http.Redirect(w, r, "/signup", http.StatusFound)
+}
+
+func createTable(db *sql.DB) (*gorp.DbMap, error) {
+	dbmap := &gorp.DbMap{Db: db, Dialect: gorp.SqliteDialect{}}
+	pageTable := dbmap.AddTableWithName(Page{}, "page").SetKeys(true, "Id")
+	pageTable.ColMap("Title").Rename("title")
+	pageTable.ColMap("Body").Rename("body")
+
+	userTable := dbmap.AddTableWithName(User{}, "user").SetKeys(true, "Id")
+	userTable.ColMap("Name").SetUnique(true)
+
+	dbmap.DropTables()
+	err := dbmap.CreateTables()
+	if err != nil {
+		return nil, err
+	}
+
+	return dbmap,err
+}
+
+func includeDb(dbmap *gorp.DbMap) func(c *web.C, h http.Handler) http.Handler {
+	wikidb := &WikiDb{
+		DbMap : dbmap,
+	}
+
+	return func(c *web.C, h http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			c.Env["wikidb"] = wikidb
+			h.ServeHTTP(w, r)
+		}
+		return http.HandlerFunc(fn)
+	}
+}
+
 func main() {
 	db, err := sql.Open("sqlite3", "./wiki.db")
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	dbmap := &gorp.DbMap{Db: db, Dialect: gorp.SqliteDialect{}}
-	defer dbmap.Db.Close()
-	t := dbmap.AddTableWithName(Page{}, "page").SetKeys(true, "Id")
-	t.ColMap("Title").Rename("title")
-	t.ColMap("Body").Rename("body")
-
-	dbmap.DropTables()
-	err = dbmap.CreateTables()
+	dbmap, err := createTable(db)
 	if err != nil {
 		log.Fatalln(err)
 	}
-
-	wikidb := &WikiDb{
-		DbMap : dbmap,
-	}
+	defer dbmap.Db.Close()
 
 	goji.Get("/signup", signupHandler)
 
-	goji.Use(func(c *web.C, h http.Handler) http.Handler {
-		fn := func(w http.ResponseWriter, r *http.Request) {
-			c.Env["wikidb"] = wikidb
-			h.ServeHTTP(w, r)
-		}
-		return http.HandlerFunc(fn)
-	})
+	goji.Use(includeDb(dbmap))
+
+	goji.Post("/signup", signupPostHandler)
 
 	goji.Get("/wiki/:title", viewHandler)
 	goji.Get("/wiki/:title/edit", editHandler)
