@@ -12,8 +12,10 @@ import (
 	"github.com/coopernurse/gorp"
 	_ "github.com/mattn/go-sqlite3"
 
-	//"github.com/gorilla/sessions"
+	"github.com/gorilla/sessions"
 )
+
+var store = sessions.NewCookieStore([]byte("something-very-secret")) // FIXME
 
 type Page struct {
 	Id      int64 `db:"post_id"`
@@ -24,7 +26,7 @@ type Page struct {
 type User struct {
 	Id      int64 `db:"user_id"`
 	Name    string `db:"name"`
-	Password string `db: "password"` // FIXME: plain text
+	Password string `db:"password"` // FIXME: plain text
 }
 
 type WikiDb struct {
@@ -110,9 +112,44 @@ func signupPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	err := wikidb.DbMap.Insert(user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	http.Redirect(w, r, "/signup", http.StatusFound)
+	session, _ := store.Get(r, "user")
+	session.Values["id"] = user.Id
+	sessions.Save(r,w)
+
+	http.Redirect(w, r, "/signup", http.StatusFound) // FIXME: redirect main page
+}
+
+var loginTpl = pongo2.Must(pongo2.FromFile("view/login.html"))
+
+func loginHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	err := loginTpl.ExecuteWriter(pongo2.Context{}, w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	wikidb := getWikiDb(c)
+	name := r.FormValue("username")
+	password := r.FormValue("password")
+
+	user := User{}
+	err := wikidb.DbMap.SelectOne(&user, "select * from user where name=? and password=?", name, password)
+	if err == sql.ErrNoRows {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	} else if err != nil {
+		log.Fatalln(err)
+	}
+
+	session, _ := store.Get(r, "user")
+	session.Values["id"] = user.Id
+	sessions.Save(r,w)
+
+	http.Redirect(w, r, "/login", http.StatusFound)
 }
 
 func createTable(db *sql.DB) (*gorp.DbMap, error) {
@@ -147,6 +184,19 @@ func includeDb(dbmap *gorp.DbMap) func(c *web.C, h http.Handler) http.Handler {
 	}
 }
 
+func needLogin(c *web.C, h http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		session, _ := store.Get(r, "user")
+		_, ok := session.Values["id"]
+		if !ok {
+			fmt.Printf("need login\n")
+			http.Redirect(w, r, "/login", http.StatusFound)
+		}
+		h.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(fn)
+}
+
 func main() {
 	db, err := sql.Open("sqlite3", "./wiki.db")
 	if err != nil {
@@ -160,10 +210,14 @@ func main() {
 	defer dbmap.Db.Close()
 
 	goji.Get("/signup", signupHandler)
+	goji.Get("/login", loginHandler)
 
 	goji.Use(includeDb(dbmap))
 
 	goji.Post("/signup", signupPostHandler)
+	goji.Post("/login", loginPostHandler)
+
+	goji.Use(needLogin)
 
 	goji.Get("/wiki/:title", viewHandler)
 	goji.Get("/wiki/:title/edit", editHandler)
