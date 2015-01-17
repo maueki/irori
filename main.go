@@ -11,12 +11,22 @@ import (
 	"github.com/flosch/pongo2"
 	"github.com/coopernurse/gorp"
 	_ "github.com/mattn/go-sqlite3"
+
+	"github.com/gorilla/sessions"
 )
+
+var store = sessions.NewCookieStore([]byte("something-very-secret")) // FIXME
 
 type Page struct {
 	Id      int64 `db:"post_id"`
 	Title string
 	Body string
+}
+
+type User struct {
+	Id      int64 `db:"user_id"`
+	Name    string `db:"name"`
+	Password string `db:"password"` // FIXME: plain text
 }
 
 type WikiDb struct {
@@ -84,38 +94,161 @@ func getWikiDb(c web.C) *WikiDb {
 	return c.Env["wikidb"].(*WikiDb)
 }
 
+var signupTpl = pongo2.Must(pongo2.FromFile("view/signup.html"))
+
+func signupHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	err := signupTpl.ExecuteWriter(pongo2.Context{}, w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func signupPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	wikidb := getWikiDb(c)
+	name := r.FormValue("username")
+	password := r.FormValue("password")
+
+	user := &User{Name: name, Password: password}
+	err := wikidb.DbMap.Insert(user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	session, _ := store.Get(r, "user")
+	session.Values["id"] = user.Id
+	sessions.Save(r,w)
+
+	http.Redirect(w, r, "/signup", http.StatusFound) // FIXME: redirect main page
+}
+
+var loginTpl = pongo2.Must(pongo2.FromFile("view/login.html"))
+
+func loginHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	err := loginTpl.ExecuteWriter(pongo2.Context{}, w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	wikidb := getWikiDb(c)
+	name := r.FormValue("username")
+	password := r.FormValue("password")
+
+	user := User{}
+	err := wikidb.DbMap.SelectOne(&user, "select * from user where name=? and password=?", name, password)
+	if err == sql.ErrNoRows {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	} else if err != nil {
+		log.Fatalln(err)
+	}
+
+	session, _ := store.Get(r, "user")
+	session.Values["id"] = user.Id
+	sessions.Save(r,w)
+
+	http.Redirect(w, r, "/login", http.StatusFound)
+}
+
+func createTable(db *sql.DB) (*gorp.DbMap, error) {
+	dbmap := &gorp.DbMap{Db: db, Dialect: gorp.SqliteDialect{}}
+	pageTable := dbmap.AddTableWithName(Page{}, "page").SetKeys(true, "Id")
+	pageTable.ColMap("Title").Rename("title")
+	pageTable.ColMap("Body").Rename("body")
+
+	userTable := dbmap.AddTableWithName(User{}, "user").SetKeys(true, "Id")
+	userTable.ColMap("Name").SetUnique(true)
+
+	dbmap.DropTables()
+	err := dbmap.CreateTables()
+	if err != nil {
+		return nil, err
+	}
+
+	return dbmap,err
+}
+
+var mainTpl = pongo2.Must(pongo2.FromFile("view/main.html"))
+
+func mainHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	err := mainTpl.ExecuteWriter(pongo2.Context{}, w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func logoutHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	session, _ := store.Get(r, "user")
+	delete(session.Values, "id")
+	sessions.Save(r,w)
+
+	http.Redirect(w, r, "/wiki", http.StatusFound)
+}
+
+func includeDb(dbmap *gorp.DbMap) func(c *web.C, h http.Handler) http.Handler {
+	wikidb := &WikiDb{
+		DbMap : dbmap,
+	}
+
+	return func(c *web.C, h http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			c.Env["wikidb"] = wikidb
+			h.ServeHTTP(w, r)
+		}
+		return http.HandlerFunc(fn)
+	}
+}
+
+func needLogin(c *web.C, h http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		session, _ := store.Get(r, "user")
+		_, ok := session.Values["id"]
+		if !ok {
+			fmt.Printf("need login\n")
+			http.Redirect(w, r, "/login", http.StatusFound)
+		}
+		h.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(fn)
+}
+
 func main() {
 	db, err := sql.Open("sqlite3", "./wiki.db")
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	dbmap := &gorp.DbMap{Db: db, Dialect: gorp.SqliteDialect{}}
-	defer dbmap.Db.Close()
-	t := dbmap.AddTableWithName(Page{}, "page").SetKeys(true, "Id")
-	t.ColMap("Title").Rename("title")
-	t.ColMap("Body").Rename("body")
-
-	dbmap.DropTables()
-	err = dbmap.CreateTables()
+	dbmap, err := createTable(db)
 	if err != nil {
 		log.Fatalln(err)
 	}
+	defer dbmap.Db.Close()
 
-	wikidb := &WikiDb{
-		DbMap : dbmap,
-	}
+	m := web.New()
+	m.Get("/signup", signupHandler)
+	m.Get("/login", loginHandler)
 
-	goji.Use(func(c *web.C, h http.Handler) http.Handler {
-		fn := func(w http.ResponseWriter, r *http.Request) {
-			c.Env["wikidb"] = wikidb
-			h.ServeHTTP(w, r)
-		}
-		return http.HandlerFunc(fn)
-	})
+	goji.Use(includeDb(dbmap))
 
-	goji.Get("/wiki/:title", viewHandler)
-	goji.Get("/wiki/:title/edit", editHandler)
-	goji.Post("/wiki/:title", saveHandler)
+	m.Post("/signup", signupPostHandler)
+	m.Post("/login", loginPostHandler)
+
+	m.Post("/logout", logoutHandler)
+	m.Get("/wiki", mainHandler)
+
+	userMux := web.New()
+	userMux.Use(needLogin)
+
+	userMux.Use(includeDb(dbmap))
+
+	userMux.Get("/wiki/:title", viewHandler)
+	userMux.Get("/wiki/:title/edit", editHandler)
+	userMux.Post("/wiki/:title", saveHandler)
+
+	goji.Handle("/wiki/*", userMux)
+	goji.Handle("/*", m)
+
 	goji.Serve()
 }
