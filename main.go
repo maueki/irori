@@ -170,6 +170,23 @@ func createTable(db *sql.DB) (*gorp.DbMap, error) {
 	return dbmap,err
 }
 
+var mainTpl = pongo2.Must(pongo2.FromFile("view/main.html"))
+
+func mainHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	err := mainTpl.ExecuteWriter(pongo2.Context{}, w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func logoutHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	session, _ := store.Get(r, "user")
+	delete(session.Values, "id")
+	sessions.Save(r,w)
+
+	http.Redirect(w, r, "/wiki", http.StatusFound)
+}
+
 func includeDb(dbmap *gorp.DbMap) func(c *web.C, h http.Handler) http.Handler {
 	wikidb := &WikiDb{
 		DbMap : dbmap,
@@ -209,18 +226,29 @@ func main() {
 	}
 	defer dbmap.Db.Close()
 
-	goji.Get("/signup", signupHandler)
-	goji.Get("/login", loginHandler)
+	m := web.New()
+	m.Get("/signup", signupHandler)
+	m.Get("/login", loginHandler)
 
 	goji.Use(includeDb(dbmap))
 
-	goji.Post("/signup", signupPostHandler)
-	goji.Post("/login", loginPostHandler)
+	m.Post("/signup", signupPostHandler)
+	m.Post("/login", loginPostHandler)
 
-	goji.Use(needLogin)
+	m.Post("/logout", logoutHandler)
+	m.Get("/wiki", mainHandler)
 
-	goji.Get("/wiki/:title", viewHandler)
-	goji.Get("/wiki/:title/edit", editHandler)
-	goji.Post("/wiki/:title", saveHandler)
+	userMux := web.New()
+	userMux.Use(needLogin)
+
+	userMux.Use(includeDb(dbmap))
+
+	userMux.Get("/wiki/:title", viewHandler)
+	userMux.Get("/wiki/:title/edit", editHandler)
+	userMux.Post("/wiki/:title", saveHandler)
+
+	goji.Handle("/wiki/*", userMux)
+	goji.Handle("/*", m)
+
 	goji.Serve()
 }
