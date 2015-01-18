@@ -248,6 +248,7 @@ func main() {
 	userMux.Post("/wiki/:title", saveHandler)
 
 	goji.Handle("/wiki/*", userMux)
+	goji.Get("/assets/*", http.FileServer(http.Dir(".")))
 	goji.Handle("/*", m)
 
 	goji.Serve()
