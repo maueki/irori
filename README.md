@@ -9,6 +9,10 @@ $ ./go_wiki -bind :9090
 
 Access to http://localhost:9090/wiki
 
+# License
+
+MIT License
+
 # link
 
 https://goji.io/
