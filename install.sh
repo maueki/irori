@@ -11,3 +11,4 @@ go get github.com/flosch/pongo2-addons
 go get github.com/gorilla/sessions
 go get github.com/mattn/go-sqlite3
 go get github.com/zenazn/goji
+go get github.com/flosch/pongo2-addons
