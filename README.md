@@ -10,6 +10,11 @@ $ ./go_wiki -bind :9090
 
 Access to http://localhost:9090/wiki
 
+# GoDoc
+
+[![GoDoc](https://godoc.org/github.com/maueki/go_wiki?status.svg)](https://godoc.org/github.com/maueki/go_wiki)
+http://godoc.org/github.com/maueki/go_wiki
+
 # License
 
 MIT License
