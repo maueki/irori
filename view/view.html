@@ -4,5 +4,5 @@
 
 {% block content %}
 <h1>{{ page.Title }}</h1>
-<div>{{ page.Body }}</div>
+<div>{{ page.Body|markdown }}</div>
 {% endblock %}

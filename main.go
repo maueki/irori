@@ -9,6 +9,7 @@ import (
 	"github.com/zenazn/goji"
 	"github.com/zenazn/goji/web"
 	"github.com/flosch/pongo2"
+	_ "github.com/flosch/pongo2-addons"
 	"github.com/coopernurse/gorp"
 	_ "github.com/mattn/go-sqlite3"
 
