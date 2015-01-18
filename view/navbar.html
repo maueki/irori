@@ -1,7 +1,5 @@
 {% extends "base.html" %}
 
-{% block title %} main page {% endblock %}
-
 {% block posthead %}
 <link href="assets/css/navbar.css" rel="stylesheet">
 {% endblock %}
@@ -20,19 +18,16 @@
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-	<li class="active"><a href="#">Home</a></li>
+	<li><a href="/wiki">Home</a></li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
-	<li><a href="/login">ログイン</a></li>
+	<li><a href="/logout">ログアウト</a></li>
       </ul>
     </div><!--/.nav-collapse -->
   </div>
 </nav>
 
-<div class="container">
-  <div class="jumbotron">
-    <h1>Go Wiki</h1>
-    <p><a class="btn btn-lg btn-success" href="/signup" role="button">新規登録</a></p>
-  </div>
-</div> <!-- /container -->
+{% block content %}
+{% endblock %}
+
 {% endblock %}

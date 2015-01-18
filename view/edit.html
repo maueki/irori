@@ -1,5 +1,11 @@
+{% extends "navbar.html" %}
+
+{% block title %}{{page.Title}}{% endblock %}
+
+{% block content %}
 <h1>Editing {{page.Title}}</h1>
   <form action="/wiki/{{page.Title}}" method="POST">
     <textarea name="body">{{ page.Body|stringformat:"%s" }}</textarea><br>
     <input type="submit" value="Save">
   </form>
+{% endblock %}
