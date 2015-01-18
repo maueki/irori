@@ -1,17 +1,17 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
-	"database/sql"
 
-	"github.com/zenazn/goji"
-	"github.com/zenazn/goji/web"
+	"github.com/coopernurse/gorp"
 	"github.com/flosch/pongo2"
 	_ "github.com/flosch/pongo2-addons"
-	"github.com/coopernurse/gorp"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/zenazn/goji"
+	"github.com/zenazn/goji/web"
 
 	"github.com/gorilla/sessions"
 )
@@ -19,14 +19,14 @@ import (
 var store = sessions.NewCookieStore([]byte("something-very-secret")) // FIXME
 
 type Page struct {
-	Id      int64 `db:"post_id"`
+	Id    int64 `db:"post_id"`
 	Title string
-	Body string
+	Body  string
 }
 
 type User struct {
-	Id      int64 `db:"user_id"`
-	Name    string `db:"name"`
+	Id       int64  `db:"user_id"`
+	Name     string `db:"name"`
 	Password string `db:"password"` // FIXME: plain text
 }
 
@@ -55,7 +55,7 @@ func loadPage(c web.C, title string) (*Page, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &p,nil
+	return &p, nil
 }
 
 var viewTpl = pongo2.Must(pongo2.FromFile("view/view.html"))
@@ -93,7 +93,7 @@ func saveHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/wiki/" + title, http.StatusFound)
+	http.Redirect(w, r, "/wiki/"+title, http.StatusFound)
 }
 
 func getWikiDb(c web.C) *WikiDb {
@@ -123,7 +123,7 @@ func signupPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	session, _ := store.Get(r, "user")
 	session.Values["id"] = user.Id
-	sessions.Save(r,w)
+	sessions.Save(r, w)
 
 	http.Redirect(w, r, "/wiki", http.StatusFound)
 }
@@ -153,7 +153,7 @@ func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	session, _ := store.Get(r, "user")
 	session.Values["id"] = user.Id
-	sessions.Save(r,w)
+	sessions.Save(r, w)
 
 	http.Redirect(w, r, "/wiki", http.StatusFound)
 }
@@ -173,7 +173,7 @@ func createTable(db *sql.DB) (*gorp.DbMap, error) {
 		return nil, err
 	}
 
-	return dbmap,err
+	return dbmap, err
 }
 
 var mainTpl = pongo2.Must(pongo2.FromFile("view/main.html"))
@@ -188,14 +188,14 @@ func mainHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 func logoutHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	session, _ := store.Get(r, "user")
 	delete(session.Values, "id")
-	sessions.Save(r,w)
+	sessions.Save(r, w)
 
 	http.Redirect(w, r, "/wiki", http.StatusFound)
 }
 
 func includeDb(dbmap *gorp.DbMap) func(c *web.C, h http.Handler) http.Handler {
 	wikidb := &WikiDb{
-		DbMap : dbmap,
+		DbMap: dbmap,
 	}
 
 	return func(c *web.C, h http.Handler) http.Handler {
