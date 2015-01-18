@@ -124,7 +124,7 @@ func signupPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	session.Values["id"] = user.Id
 	sessions.Save(r,w)
 
-	http.Redirect(w, r, "/signup", http.StatusFound) // FIXME: redirect main page
+	http.Redirect(w, r, "/wiki", http.StatusFound)
 }
 
 var loginTpl = pongo2.Must(pongo2.FromFile("view/login.html"))
@@ -154,7 +154,7 @@ func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	session.Values["id"] = user.Id
 	sessions.Save(r,w)
 
-	http.Redirect(w, r, "/login", http.StatusFound)
+	http.Redirect(w, r, "/wiki", http.StatusFound)
 }
 
 func createTable(db *sql.DB) (*gorp.DbMap, error) {
@@ -240,7 +240,7 @@ func main() {
 	m.Post("/signup", signupPostHandler)
 	m.Post("/login", loginPostHandler)
 
-	m.Post("/logout", logoutHandler)
+	m.Get("/logout", logoutHandler)
 	m.Get("/wiki", mainHandler)
 
 	userMux := web.New()
