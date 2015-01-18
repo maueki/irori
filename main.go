@@ -57,10 +57,15 @@ func loadPage(c web.C, title string) (*Page, error) {
 	return &p,nil
 }
 
+var viewTpl = pongo2.Must(pongo2.FromFile("view/view.html"))
+
 func viewHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	title := c.URLParams["title"]
 	p, _ := loadPage(c, title)
-	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", p.Title, p.Body)
+	err := viewTpl.ExecuteWriter(pongo2.Context{"page": p}, w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 var editTpl = pongo2.Must(pongo2.FromFile("view/edit.html"))
