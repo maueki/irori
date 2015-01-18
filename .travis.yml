@@ -1,5 +1,6 @@
 notifications:
     email: false
+    slack: itage:bcU8Wypogj7TqOJv0y7mCk1j
 
 language: go
 
