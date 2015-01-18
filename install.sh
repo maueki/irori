@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 
 if [ -z $GOPATH ]; then
     echo "please set \$GOPATH"
