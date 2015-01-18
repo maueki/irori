@@ -1,0 +1,8 @@
+language: go
+
+go:
+    - tip
+
+install:
+    - mkdir ${HOME}/gocode && export GOPATH=${HOME}/gocode
+    - ./install.sh
