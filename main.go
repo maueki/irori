@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 
+	"code.google.com/p/go.crypto/bcrypt"
+
 	"github.com/coopernurse/gorp"
 	"github.com/flosch/pongo2"
 	_ "github.com/flosch/pongo2-addons"
@@ -14,6 +16,7 @@ import (
 	"github.com/zenazn/goji/web"
 
 	"github.com/gorilla/sessions"
+
 )
 
 var store = sessions.NewCookieStore([]byte("something-very-secret")) // FIXME
@@ -27,7 +30,7 @@ type Page struct {
 type User struct {
 	Id       int64  `db:"user_id"`
 	Name     string `db:"name"`
-	Password string `db:"password"` // FIXME: plain text
+	Password []byte `db:"password"`
 }
 
 type WikiDb struct {
@@ -109,12 +112,21 @@ func signupHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func HashPassword(password string) []byte {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		log.Fatalln("Hash password failed: %v", err)
+		panic(err)
+	}
+	return hash
+}
+
 func signupPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	wikidb := getWikiDb(c)
 	name := r.FormValue("username")
 	password := r.FormValue("password")
 
-	user := &User{Name: name, Password: password}
+	user := &User{Name: name, Password: HashPassword(password)}
 	err := wikidb.DbMap.Insert(user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -138,12 +150,16 @@ func loginHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	session, _ := store.Get(r, "user")
+	delete(session.Values, "id")
+	sessions.Save(r, w)
+
 	wikidb := getWikiDb(c)
 	name := r.FormValue("username")
 	password := r.FormValue("password")
 
 	user := User{}
-	err := wikidb.DbMap.SelectOne(&user, "select * from user where name=? and password=?", name, password)
+	err := wikidb.DbMap.SelectOne(&user, "select * from user where name=?", name)
 	if err == sql.ErrNoRows {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -151,7 +167,13 @@ func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		log.Fatalln(err)
 	}
 
-	session, _ := store.Get(r, "user")
+	err = bcrypt.CompareHashAndPassword(user.Password, []byte(password))
+	if err != nil {
+		// TODO: login failed
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
 	session.Values["id"] = user.Id
 	sessions.Save(r, w)
 
