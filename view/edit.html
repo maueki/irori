@@ -2,10 +2,20 @@
 
 {% block title %}{{page.Title}}{% endblock %}
 
+{% block posthead %}
+<link href="/assets/css/editor.css" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
 <h1>Editing {{page.Title}}</h1>
+<div id="editor">
   <form action="/wiki/{{page.Title}}" method="POST">
     <textarea name="body">{{ page.Body|stringformat:"%s" }}</textarea><br>
     <input type="submit" value="Save">
   </form>
+</div>
+{% endblock %}
+
+{% block exscript %}
+<script src="/assets/js/editor.js"></script>
 {% endblock %}
