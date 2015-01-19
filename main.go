@@ -215,6 +215,20 @@ func logoutHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/wiki", http.StatusFound)
 }
 
+func markdownHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	tpl, err := pongo2.FromString("{{text|markdown}}")
+	if err != nil {
+		panic(err)
+	}
+
+	r.ParseForm()
+	text := r.FormValue("text")
+	err = tpl.ExecuteWriter(pongo2.Context{"text": text}, w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func includeDb(dbmap *gorp.DbMap) func(c *web.C, h http.Handler) http.Handler {
 	wikidb := &WikiDb{
 		DbMap: dbmap,
@@ -275,8 +289,14 @@ func main() {
 	userMux.Get("/wiki/:title/edit", editHandler)
 	userMux.Post("/wiki/:title", saveHandler)
 
+	mdMux := web.New()
+	mdMux.Use(needLogin)
+	mdMux.Use(includeDb(dbmap))
+	mdMux.Post("/markdown", markdownHandler)
+
 	goji.Handle("/wiki/*", userMux)
 	goji.Get("/assets/*", http.FileServer(http.Dir(".")))
+	goji.Handle("/markdown", mdMux)
 	goji.Handle("/*", m)
 
 	goji.Serve()
