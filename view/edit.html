@@ -10,7 +10,8 @@
 <h1>Editing {{page.Title}}</h1>
 <div id="editor">
   <form action="/wiki/{{page.Title}}" method="POST">
-    <textarea name="body">{{ page.Body|stringformat:"%s" }}</textarea><br>
+    <textarea name="body">{{ page.Body|stringformat:"%s" }}</textarea>
+    <div id="output"></div>
     <input type="submit" value="Save">
   </form>
 </div>

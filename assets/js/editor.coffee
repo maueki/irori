@@ -2,7 +2,13 @@ $ ->
   timer = null
 
   send_text = () ->
-    console.log($('#editor textarea')[0].value)
+    $.ajax
+      type: 'POST'
+      url: '/markdown'
+      data:
+        text: $('#editor textarea')[0].value
+      success: (data) ->
+        $('#editor #output').html(data)
 
   ta = $('#editor textarea')[0]
   ta.addEventListener 'input', () ->
