@@ -6,6 +6,3 @@ language: go
 
 go:
     - tip
-
-install:
-    - ./install.sh
