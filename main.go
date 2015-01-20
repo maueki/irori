@@ -301,6 +301,7 @@ func main() {
 
 	m.Get("/logout", logoutHandler)
 	m.Get("/wiki", mainHandler)
+	m.Get("/", mainHandler)
 
 	userMux := web.New()
 	userMux.Use(needLogin)
