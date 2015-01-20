@@ -4,7 +4,8 @@
 # build & start
 
 ```
-$ go build
+$ go get -d -v ./...
+$ go build -v
 $ ./go_wiki -bind :9090
 ```
 
@@ -17,5 +18,7 @@ MIT License
 # link
 
 https://goji.io/
+
 https://github.com/coopernurse/gorp
+
 http://www.gorillatoolkit.org/pkg/sessions
