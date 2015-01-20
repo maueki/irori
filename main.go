@@ -19,6 +19,7 @@ import (
 
 )
 
+const SESSION_NAME="go_wiki_session"
 var store = sessions.NewCookieStore([]byte("something-very-secret")) // FIXME
 
 type Page struct {
@@ -133,7 +134,7 @@ func signupPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, _ := store.Get(r, "user")
+	session, _ := store.Get(r, SESSION_NAME)
 	session.Values["id"] = user.Id
 	sessions.Save(r, w)
 
@@ -150,7 +151,14 @@ func loginHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	session, _ := store.Get(r, "user")
+	session, _ := store.Get(r, SESSION_NAME)
+	if session.IsNew {
+		session.Options = &sessions.Options{
+			Path: "/",
+			MaxAge: 86400 * 7, // 1week
+			HttpOnly: true}
+	}
+
 	delete(session.Values, "id")
 	sessions.Save(r, w)
 
@@ -208,7 +216,7 @@ func mainHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func logoutHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	session, _ := store.Get(r, "user")
+	session, _ := store.Get(r, SESSION_NAME)
 	delete(session.Values, "id")
 	sessions.Save(r, w)
 
@@ -245,12 +253,26 @@ func includeDb(dbmap *gorp.DbMap) func(c *web.C, h http.Handler) http.Handler {
 
 func needLogin(c *web.C, h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		session, _ := store.Get(r, "user")
-		_, ok := session.Values["id"]
+		session, _ := store.Get(r, SESSION_NAME)
+		id, ok := session.Values["id"]
 		if !ok {
 			fmt.Printf("need login\n")
 			http.Redirect(w, r, "/login", http.StatusFound)
 		}
+
+		wikidb := getWikiDb(*c)
+		user := User{}
+		err := wikidb.DbMap.SelectOne(&user, "select * from user where user_id=?", id)
+		if err == sql.ErrNoRows {
+			delete(session.Values, "id")
+			sessions.Save(r, w)
+
+			fmt.Printf("need login\n")
+			http.Redirect(w, r, "/login", http.StatusFound)
+		} else if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
 		h.ServeHTTP(w, r)
 	}
 	return http.HandlerFunc(fn)
