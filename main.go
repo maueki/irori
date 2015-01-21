@@ -16,10 +16,10 @@ import (
 	"github.com/zenazn/goji/web"
 
 	"github.com/gorilla/sessions"
-
 )
 
-const SESSION_NAME="go_wiki_session"
+const SESSION_NAME = "go_wiki_session"
+
 var store = sessions.NewCookieStore([]byte("something-very-secret")) // FIXME
 
 type Page struct {
@@ -62,9 +62,8 @@ func loadPage(c web.C, title string) (*Page, error) {
 	return &p, nil
 }
 
-var viewTpl = pongo2.Must(pongo2.FromFile("view/view.html"))
-
 func viewHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	viewTpl := pongo2.Must(pongo2.FromFile("view/view.html"))
 	title := c.URLParams["title"]
 	p, _ := loadPage(c, title)
 	err := viewTpl.ExecuteWriter(pongo2.Context{"page": p}, w)
@@ -73,9 +72,8 @@ func viewHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-var editTpl = pongo2.Must(pongo2.FromFile("view/edit.html"))
-
 func editHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	editTpl := pongo2.Must(pongo2.FromFile("view/edit.html"))
 	title := c.URLParams["title"]
 	p, err := loadPage(c, title)
 	if err != nil {
@@ -104,9 +102,8 @@ func getWikiDb(c web.C) *WikiDb {
 	return c.Env["wikidb"].(*WikiDb)
 }
 
-var signupTpl = pongo2.Must(pongo2.FromFile("view/signup.html"))
-
 func signupHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	signupTpl := pongo2.Must(pongo2.FromFile("view/signup.html"))
 	err := signupTpl.ExecuteWriter(pongo2.Context{}, w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -141,9 +138,8 @@ func signupPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/wiki", http.StatusFound)
 }
 
-var loginTpl = pongo2.Must(pongo2.FromFile("view/login.html"))
-
 func loginHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	loginTpl := pongo2.Must(pongo2.FromFile("view/login.html"))
 	err := loginTpl.ExecuteWriter(pongo2.Context{}, w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -154,8 +150,8 @@ func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	session, _ := store.Get(r, SESSION_NAME)
 	if session.IsNew {
 		session.Options = &sessions.Options{
-			Path: "/",
-			MaxAge: 86400 * 7, // 1week
+			Path:     "/",
+			MaxAge:   86400 * 7, // 1week
 			HttpOnly: true}
 	}
 
@@ -206,9 +202,8 @@ func createTable(db *sql.DB) (*gorp.DbMap, error) {
 	return dbmap, err
 }
 
-var mainTpl = pongo2.Must(pongo2.FromFile("view/main.html"))
-
 func mainHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	mainTpl := pongo2.Must(pongo2.FromFile("view/main.html"))
 	err := mainTpl.ExecuteWriter(pongo2.Context{}, w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -224,7 +219,7 @@ func logoutHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func markdownHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	tpl, err := pongo2.FromString("{{text|markdown}}")
+	tpl, err := pongo2.FromString("{{text|markdown|sanitize}}")
 	if err != nil {
 		panic(err)
 	}

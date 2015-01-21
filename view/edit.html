@@ -11,7 +11,7 @@
 <div id="editor">
   <form action="/wiki/{{page.Title}}" method="POST">
     <textarea name="body">{{ page.Body|stringformat:"%s" }}</textarea>
-    <div id="output"></div>
+    <div id="output">{{page.Body|markdown|sanitize}}</div>
     <input type="submit" value="Save">
   </form>
 </div>
