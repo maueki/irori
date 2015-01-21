@@ -16,10 +16,10 @@ import (
 	"github.com/zenazn/goji/web"
 
 	"github.com/gorilla/sessions"
-
 )
 
-const SESSION_NAME="go_wiki_session"
+const SESSION_NAME = "go_wiki_session"
+
 var store = sessions.NewCookieStore([]byte("something-very-secret")) // FIXME
 
 type Page struct {
@@ -150,8 +150,8 @@ func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	session, _ := store.Get(r, SESSION_NAME)
 	if session.IsNew {
 		session.Options = &sessions.Options{
-			Path: "/",
-			MaxAge: 86400 * 7, // 1week
+			Path:     "/",
+			MaxAge:   86400 * 7, // 1week
 			HttpOnly: true}
 	}
 
