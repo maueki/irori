@@ -1,5 +1,5 @@
 
-GOSRC=main.go
+GOSRC=main.go filter.go
 COFFEEDIR=assets/js
 COFFEESRC=$(COFFEEDIR)/editor.coffee
 
