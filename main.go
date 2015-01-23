@@ -210,6 +210,10 @@ func mainHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func rootHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/wiki", http.StatusFound)
+}
+
 func logoutHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	session, _ := store.Get(r, SESSION_NAME)
 	delete(session.Values, "id")
@@ -296,7 +300,7 @@ func main() {
 
 	m.Get("/logout", logoutHandler)
 	m.Get("/wiki", mainHandler)
-	m.Get("/", mainHandler)
+	m.Get("/", rootHandler)
 
 	userMux := web.New()
 	userMux.Use(needLogin)
