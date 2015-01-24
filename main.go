@@ -98,9 +98,7 @@ func saveHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/wiki/"+title, http.StatusFound)
 }
 
-func getWikiDb(c web.C) *WikiDb {
-	return c.Env["wikidb"].(*WikiDb)
-}
+func getWikiDb(c web.C) *WikiDb { return c.Env["wikidb"].(*WikiDb) }
 
 func signupHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	signupTpl := pongo2.Must(pongo2.FromFile("view/signup.html"))
