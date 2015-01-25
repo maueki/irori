@@ -275,6 +275,15 @@ func needLogin(c *web.C, h http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
+func addTestUser(dbmap *gorp.DbMap) {
+	user := &User{
+		Name: "test",
+		Password: []byte("$2a$10$1KbzrHDRoPwZuHxWs1D6lOSLpcCRyPZXJ1Q7sPFbBf03DSc8y8n8K"),
+	}
+
+	dbmap.Insert(user)
+}
+
 func main() {
 	db, err := sql.Open("sqlite3", "./wiki.db")
 	if err != nil {
@@ -286,6 +295,8 @@ func main() {
 		log.Fatalln(err)
 	}
 	defer dbmap.Db.Close()
+
+	addTestUser(dbmap)
 
 	m := web.New()
 	m.Get("/signup", signupHandler)
