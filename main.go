@@ -38,6 +38,11 @@ type WikiDb struct {
 	DbMap *gorp.DbMap
 }
 
+type LoginUser struct {
+	Exist bool
+	Name  string
+}
+
 func (p *Page) save(c web.C) error {
 	wikidb := getWikiDb(c)
 	pOld := Page{}
@@ -62,6 +67,31 @@ func loadPage(c web.C, title string) (*Page, error) {
 	return &p, nil
 }
 
+func getLoginUserInfo(c web.C, w http.ResponseWriter, r *http.Request) (*LoginUser, error) {
+	// check current user is success to login or not
+	loginuser := LoginUser{false, ""}
+
+	session, _ := store.Get(r, SESSION_NAME)
+	id, ok := session.Values["id"]
+	if ok {
+		wikidb := getWikiDb(c)
+		user := User{}
+		err := wikidb.DbMap.SelectOne(&user, "select * from user where user_id=?", id)
+		if err == sql.ErrNoRows {
+			delete(session.Values, "id")
+			sessions.Save(r, w)
+			fmt.Printf("not login\n")
+		} else if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		} else {
+			loginuser.Exist = true
+			loginuser.Name = user.Name
+		}
+	}
+
+	return &loginuser, nil
+}
+
 func viewHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	viewTpl := pongo2.Must(pongo2.FromFile("view/view.html"))
 	title := c.URLParams["title"]
@@ -80,7 +110,9 @@ func editHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		p = &Page{Title: title}
 	}
 
-	err = editTpl.ExecuteWriter(pongo2.Context{"page": p}, w)
+	loginuser, _ := getLoginUserInfo(c, w, r)
+
+	err = editTpl.ExecuteWriter(pongo2.Context{"loginuser": loginuser, "page": p}, w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -202,7 +234,9 @@ func createTable(db *sql.DB) (*gorp.DbMap, error) {
 
 func mainHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	mainTpl := pongo2.Must(pongo2.FromFile("view/main.html"))
-	err := mainTpl.ExecuteWriter(pongo2.Context{}, w)
+
+	loginuser, _ := getLoginUserInfo(c, w, r)
+	err := mainTpl.ExecuteWriter(pongo2.Context{"loginuser": loginuser}, w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -277,7 +311,7 @@ func needLogin(c *web.C, h http.Handler) http.Handler {
 
 func addTestUser(dbmap *gorp.DbMap) {
 	user := &User{
-		Name: "test",
+		Name:     "test",
 		Password: []byte("$2a$10$1KbzrHDRoPwZuHxWs1D6lOSLpcCRyPZXJ1Q7sPFbBf03DSc8y8n8K"),
 	}
 
