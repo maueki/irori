@@ -24,7 +24,17 @@
 {% if not loginuser.Exist %}
 	<li><a href="/login">ログイン</a></li>
 {% else %}
-	<li><a href="/logout">ログアウト</a></li>
+<li class="dropdown">
+<a class="dropdown-toggle" data-toggle="dropdown" href="#">
+    {{ loginuser.Name }}<span class="caret"></span>
+</a>
+<ul class="dropdown-menu">
+    <li><a href="#">マイページ</a></li>
+    <li><a href="#">設定</a></li>
+    <li class="divider"></li>
+    <li><a href="/logout">ログアウト</a></li>
+</ul>
+</li>
 {% endif %}
       </ul>
     </div><!--/.nav-collapse -->
