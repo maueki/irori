@@ -96,7 +96,8 @@ func viewHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	viewTpl := pongo2.Must(pongo2.FromFile("view/view.html"))
 	title := c.URLParams["title"]
 	p, _ := loadPage(c, title)
-	err := viewTpl.ExecuteWriter(pongo2.Context{"page": p}, w)
+	loginuser, _ := getLoginUserInfo(c, w, r)
+	err := viewTpl.ExecuteWriter(pongo2.Context{"loginuser": loginuser, "page": p}, w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -111,7 +112,6 @@ func editHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 
 	loginuser, _ := getLoginUserInfo(c, w, r)
-
 	err = editTpl.ExecuteWriter(pongo2.Context{"loginuser": loginuser, "page": p}, w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
