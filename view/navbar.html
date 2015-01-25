@@ -21,7 +21,11 @@
 	<li><a href="/wiki">Home</a></li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
+{% if not loginuser.Exist %}
+	<li><a href="/login">ログイン</a></li>
+{% else %}
 	<li><a href="/logout">ログアウト</a></li>
+{% endif %}
       </ul>
     </div><!--/.nav-collapse -->
   </div>
