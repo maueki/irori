@@ -2,9 +2,11 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"code.google.com/p/go.crypto/bcrypt"
 
@@ -23,9 +25,11 @@ const SESSION_NAME = "go_wiki_session"
 var store = sessions.NewCookieStore([]byte("something-very-secret")) // FIXME
 
 type Page struct {
-	Id    int64 `db:"post_id"`
-	Title string
-	Body  string
+	Id                 int64 `db:"post_id"`
+	Title              string
+	Body               string
+	LastModifiedUserId int64
+	LastModifiedDate   time.Time
 }
 
 type User struct {
@@ -43,7 +47,25 @@ type LoginUser struct {
 	Name  string
 }
 
-func (p *Page) save(c web.C) error {
+func getUserId(r *http.Request) (int64, bool) {
+	session, _ := store.Get(r, SESSION_NAME)
+
+	if id, ok := session.Values["id"].(int64); ok {
+		return id, true
+	} else {
+		return 0, false
+	}
+}
+
+func (p *Page) save(c web.C, r *http.Request) error {
+	id, hasid := getUserId(r)
+	if !hasid {
+		return errors.New("failed to get user id.") // FIXME
+	}
+
+	p.LastModifiedUserId = id
+	p.LastModifiedDate = time.Now()
+
 	wikidb := getWikiDb(c)
 	pOld := Page{}
 	err := wikidb.DbMap.SelectOne(&pOld, "select * from page where title=?", p.Title)
@@ -52,6 +74,7 @@ func (p *Page) save(c web.C) error {
 	} else if err != nil {
 		log.Fatalln(err)
 	}
+
 	p.Id = pOld.Id
 	_, err = wikidb.DbMap.Update(p)
 	return err
@@ -122,7 +145,7 @@ func saveHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	title := c.URLParams["title"]
 	body := r.FormValue("body")
 	p := &Page{Title: title, Body: body}
-	err := p.save(c)
+	err := p.save(c, r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -219,6 +242,8 @@ func createTable(db *sql.DB) (*gorp.DbMap, error) {
 	pageTable := dbmap.AddTableWithName(Page{}, "page").SetKeys(true, "Id")
 	pageTable.ColMap("Title").Rename("title")
 	pageTable.ColMap("Body").Rename("body")
+	pageTable.ColMap("LastModifiedUserId").Rename("lastuser")
+	pageTable.ColMap("LastModifiedDate").Rename("lastdate")
 
 	userTable := dbmap.AddTableWithName(User{}, "user").SetKeys(true, "Id")
 	userTable.ColMap("Name").SetUnique(true)
