@@ -6,40 +6,39 @@
 
 {% block body %}
 <nav class="navbar navbar-default navbar-static-top">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-	<span class="sr-only">Toggle navigation</span>
-	<span class="icon-bar"></span>
-	<span class="icon-bar"></span>
-	<span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="#">Go Wiki</a>
-    </div>
-    <div id="navbar" class="navbar-collapse collapse">
-      <ul class="nav navbar-nav">
-	<li><a href="/wiki">Home</a></li>
-      </ul>
-      <ul class="nav navbar-nav navbar-right">
+	<div class="container">
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+		</div>
+		<div id="navbar" class="navbar-collapse collapse">
+			<ul class="nav navbar-nav">
+				<li><img src="/assets/images/platypus48_360.png"></li>
+				<li><a class="navbar-brand" href="#">Go Wiki</a></li>
+				<li><a href="/wiki">Home</a></li>
+			</ul>
+			<ul class="nav navbar-nav navbar-right">
 {% if not loginuser.Exist %}
-	<li><a href="/login">ログイン</a></li>
+				<li><a href="/login">ログイン</a></li>
 {% else %}
-<li><a href="/wiki/{{ loginuser.Name }}/edit">記事作成</a></li>
-<li class="dropdown">
-<a class="dropdown-toggle" data-toggle="dropdown" href="#">
-    {{ loginuser.Name }}<span class="caret"></span>
-</a>
-<ul class="dropdown-menu">
-    <li><a href="#">マイページ</a></li>
-    <li><a href="#">設定</a></li>
-    <li class="divider"></li>
-    <li><a href="/logout">ログアウト</a></li>
-</ul>
-</li>
+				<li><a href="/wiki/{{ loginuser.Name }}/edit">記事作成</a></li>
+				<li class="dropdown">
+					<a class="dropdown-toggle" data-toggle="dropdown" href="#">{{ loginuser.Name }}<span class="caret"></span></a>
+					<ul class="dropdown-menu">
+						<li><a href="#">マイページ</a></li>
+						<li><a href="#">設定</a></li>
+						<li class="divider"></li>
+						<li><a href="/logout">ログアウト</a></li>
+					</ul>
+				</li>
 {% endif %}
-      </ul>
-    </div><!--/.nav-collapse -->
-  </div>
+			</ul>
+		</div><!--/.nav-collapse -->
+	</div>
 </nav>
 
 <div class="container">
