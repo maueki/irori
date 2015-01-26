@@ -17,6 +17,7 @@ import (
 	"github.com/zenazn/goji"
 	"github.com/zenazn/goji/web"
 
+	"github.com/bkaradzic/go-lz4"
 	"github.com/gorilla/sessions"
 )
 
@@ -30,6 +31,15 @@ type Page struct {
 	Body               string
 	LastModifiedUserId int64
 	LastModifiedDate   time.Time
+}
+
+type History struct {
+	Id             int64 `db:"history_id"`
+	PageId         int64
+	Title          []byte
+	Body           []byte
+	ModifiedUserId int64
+	ModifiedDate   time.Time
 }
 
 type User struct {
@@ -57,6 +67,35 @@ func getUserId(r *http.Request) (int64, bool) {
 	}
 }
 
+func encodeFromText(text string) ([]byte, error) {
+	return lz4.Encode(nil, []byte(text))
+}
+
+func decodeFromBlob(data []byte) (string, error) {
+	data, error := lz4.Decode(nil, data)
+	return string(data), error
+}
+
+func (p *Page) createHistoryData() (*History, error) {
+	title, err := encodeFromText(p.Title)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := encodeFromText(p.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	history := History{}
+	history.Title = title
+	history.Body = body
+	history.ModifiedUserId = p.LastModifiedUserId
+	history.ModifiedDate = p.LastModifiedDate
+
+	return &history, nil
+}
+
 func (p *Page) save(c web.C, r *http.Request) error {
 	id, hasid := getUserId(r)
 	if !hasid {
@@ -66,18 +105,60 @@ func (p *Page) save(c web.C, r *http.Request) error {
 	p.LastModifiedUserId = id
 	p.LastModifiedDate = time.Now()
 
+	history, err := p.createHistoryData()
+	if err != nil {
+		return err
+	}
+
 	wikidb := getWikiDb(c)
 	pOld := Page{}
-	err := wikidb.DbMap.SelectOne(&pOld, "select * from page where title=?", p.Title)
+
+	err = wikidb.DbMap.SelectOne(&pOld, "select * from page where title=?", p.Title)
 	if err == sql.ErrNoRows {
-		return wikidb.DbMap.Insert(p)
+		trans, err := wikidb.DbMap.Begin()
+		if err != nil {
+			return err
+		}
+
+		err = trans.Insert(p)
+		if err != nil {
+			trans.Rollback()
+			return err
+		}
+
+		history.PageId = p.Id
+		err = trans.Insert(history)
+		if err != nil {
+			trans.Rollback()
+			return err
+		}
+
+		return trans.Commit()
 	} else if err != nil {
 		log.Fatalln(err)
 	}
 
 	p.Id = pOld.Id
-	_, err = wikidb.DbMap.Update(p)
-	return err
+	history.PageId = p.Id
+
+	trans, err := wikidb.DbMap.Begin()
+	if err != nil {
+		return err
+	}
+
+	_, err = trans.Update(p)
+	if err != nil {
+		trans.Rollback()
+		return err
+	}
+
+	err = trans.Insert(history)
+	if err != nil {
+		trans.Rollback()
+		return err
+	}
+
+	return trans.Commit()
 }
 
 func loadPage(c web.C, title string) (*Page, error) {
@@ -244,6 +325,13 @@ func createTable(db *sql.DB) (*gorp.DbMap, error) {
 	pageTable.ColMap("Body").Rename("body")
 	pageTable.ColMap("LastModifiedUserId").Rename("lastuser")
 	pageTable.ColMap("LastModifiedDate").Rename("lastdate")
+
+	historyTable := dbmap.AddTableWithName(History{}, "history").SetKeys(true, "Id")
+	historyTable.ColMap("PageId").Rename("pageid")
+	historyTable.ColMap("Title").Rename("title")
+	historyTable.ColMap("Body").Rename("body")
+	historyTable.ColMap("ModifiedUserId").Rename("user")
+	historyTable.ColMap("ModifiedDate").Rename("date")
 
 	userTable := dbmap.AddTableWithName(User{}, "user").SetKeys(true, "Id")
 	userTable.ColMap("Name").SetUnique(true)
