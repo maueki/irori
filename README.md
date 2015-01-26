@@ -11,6 +11,10 @@ $ ./go_wiki -bind :9090
 
 Access to http://localhost:9090/wiki
 
+# Demo Page
+
+https://heroku-go-wiki.herokuapp.com/wiki
+
 # License
 
 MIT License
