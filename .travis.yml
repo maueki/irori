@@ -5,7 +5,10 @@ notifications:
 language: go
 
 before_install:
-    sudo apt-get install -y coffeescript
+    - sudo apt-get install -y coffeescript
+
+install:
+    - make all
 
 go:
     - tip

@@ -7,7 +7,7 @@ COFFEESRC=$(COFFEEDIR)/editor.coffee
 all: go_wiki coffee
 
 go_wiki: $(GOSRC)
-	go get -d -v ./... && go build -v ./...
+	go get -d -v ./... && go build -v
 
 coffee: $(COFFEESRC)
 	cd $(COFFEEDIR) && coffee -c *.coffee
