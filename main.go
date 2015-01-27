@@ -57,6 +57,48 @@ type LoginUser struct {
 	Name  string
 }
 
+type TransactionChain struct {
+	Transaction *gorp.Transaction
+	Error       error
+}
+
+func createTransaction(DbMap *gorp.DbMap) (*TransactionChain, error) {
+	t := TransactionChain{}
+	trans, err := DbMap.Begin()
+
+	if err != nil {
+		return nil, err
+	}
+
+	t.Transaction = trans
+	return &t, nil
+}
+
+func (t *TransactionChain) Insert(list ...interface{}) *TransactionChain {
+	if t.Error == nil {
+		t.Error = t.Transaction.Insert(list...)
+	}
+
+	return t
+}
+
+func (t *TransactionChain) Update(list ...interface{}) *TransactionChain {
+	if t.Error == nil {
+		_, t.Error = t.Transaction.Update(list...)
+	}
+
+	return t
+}
+
+func (t *TransactionChain) Subscribe() error {
+	if t.Error != nil {
+		t.Transaction.Rollback()
+		return t.Error
+	}
+
+	return t.Transaction.Commit()
+}
+
 func getUserId(r *http.Request) (int64, bool) {
 	session, _ := store.Get(r, SESSION_NAME)
 
@@ -115,25 +157,17 @@ func (p *Page) save(c web.C, r *http.Request) error {
 
 	err = wikidb.DbMap.SelectOne(&pOld, "select * from page where title=?", p.Title)
 	if err == sql.ErrNoRows {
-		trans, err := wikidb.DbMap.Begin()
+		t, err := createTransaction(wikidb.DbMap)
 		if err != nil {
 			return err
 		}
 
-		err = trans.Insert(p)
-		if err != nil {
-			trans.Rollback()
-			return err
-		}
+		t.Insert(p)
 
 		history.PageId = p.Id
-		err = trans.Insert(history)
-		if err != nil {
-			trans.Rollback()
-			return err
-		}
+		t.Insert(history)
 
-		return trans.Commit()
+		return t.Subscribe()
 	} else if err != nil {
 		log.Fatalln(err)
 	}
@@ -141,24 +175,9 @@ func (p *Page) save(c web.C, r *http.Request) error {
 	p.Id = pOld.Id
 	history.PageId = p.Id
 
-	trans, err := wikidb.DbMap.Begin()
-	if err != nil {
-		return err
-	}
-
-	_, err = trans.Update(p)
-	if err != nil {
-		trans.Rollback()
-		return err
-	}
-
-	err = trans.Insert(history)
-	if err != nil {
-		trans.Rollback()
-		return err
-	}
-
-	return trans.Commit()
+	t, err := createTransaction(wikidb.DbMap)
+	t.Update(p).Insert(history)
+	return t.Subscribe()
 }
 
 func loadPage(c web.C, title string) (*Page, error) {
