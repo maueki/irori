@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/maueki/go_wiki/db"
 	"log"
 	"net/http"
 	"time"
@@ -55,48 +56,6 @@ type WikiDb struct {
 type LoginUser struct {
 	Exist bool
 	Name  string
-}
-
-type TransactionChain struct {
-	Transaction *gorp.Transaction
-	Error       error
-}
-
-func createTransaction(DbMap *gorp.DbMap) (*TransactionChain, error) {
-	t := TransactionChain{}
-	trans, err := DbMap.Begin()
-
-	if err != nil {
-		return nil, err
-	}
-
-	t.Transaction = trans
-	return &t, nil
-}
-
-func (t *TransactionChain) Insert(list ...interface{}) *TransactionChain {
-	if t.Error == nil {
-		t.Error = t.Transaction.Insert(list...)
-	}
-
-	return t
-}
-
-func (t *TransactionChain) Update(list ...interface{}) *TransactionChain {
-	if t.Error == nil {
-		_, t.Error = t.Transaction.Update(list...)
-	}
-
-	return t
-}
-
-func (t *TransactionChain) Subscribe() error {
-	if t.Error != nil {
-		t.Transaction.Rollback()
-		return t.Error
-	}
-
-	return t.Transaction.Commit()
 }
 
 func getUserId(r *http.Request) (int64, bool) {
@@ -157,7 +116,7 @@ func (p *Page) save(c web.C, r *http.Request) error {
 
 	err = wikidb.DbMap.SelectOne(&pOld, "select * from page where title=?", p.Title)
 	if err == sql.ErrNoRows {
-		t, err := createTransaction(wikidb.DbMap)
+		t, err := db.CreateAccessor(wikidb.DbMap)
 		if err != nil {
 			return err
 		}
@@ -175,7 +134,7 @@ func (p *Page) save(c web.C, r *http.Request) error {
 	p.Id = pOld.Id
 	history.PageId = p.Id
 
-	t, err := createTransaction(wikidb.DbMap)
+	t, err := db.CreateAccessor(wikidb.DbMap)
 	t.Update(p).Insert(history)
 	return t.Subscribe()
 }
