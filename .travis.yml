@@ -11,4 +11,4 @@ before_install:
 go:
     - tip
 cache:
-    - apt true
+    - apt: true
