@@ -2,10 +2,16 @@ notifications:
     email: false
     slack: itage:bcU8Wypogj7TqOJv0y7mCk1j
 
+cache:
+    - apt: true
+
 language: go
 
 before_install:
-    sudo apt-get install -y coffeescript
+    - sudo apt-get install -y coffeescript
+
+script:
+    - make -j4
 
 go:
     - tip
