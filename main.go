@@ -438,6 +438,7 @@ func main() {
 	m.Get("/wiki", mainHandler)
 	m.Get("/", rootHandler)
 
+	// Mux : create new page or show a page created already
 	pageMux := web.New()
 	pageMux.Use(needLogin)
 	pageMux.Use(includeDb(dbmap))
@@ -445,6 +446,7 @@ func main() {
 	pageMux.Get("/wiki/:title/edit", editHandler)
 	pageMux.Post("/wiki/:title", saveHandler)
 
+	// Mux : convert Markdown to HTML which is send by Ajax
 	mdMux := web.New()
 	mdMux.Use(needLogin)
 	mdMux.Use(includeDb(dbmap))
