@@ -6,9 +6,7 @@ language: go
 
 before_install:
     - sudo apt-get install -y coffeescript
-
-install:
-    - make all
+    - make -j4
 
 go:
     - tip
