@@ -116,7 +116,7 @@ func (p *Page) save(c web.C, r *http.Request) error {
 
 	err = wikidb.DbMap.SelectOne(&pOld, "select * from page where title=?", p.Title)
 	if err == sql.ErrNoRows {
-		t, err := db.CreateAccessor(wikidb.DbMap)
+		t, err := db.CreateTransaction(wikidb.DbMap)
 		if err != nil {
 			return err
 		}
@@ -134,7 +134,7 @@ func (p *Page) save(c web.C, r *http.Request) error {
 	p.Id = pOld.Id
 	history.PageId = p.Id
 
-	t, err := db.CreateAccessor(wikidb.DbMap)
+	t, err := db.CreateTransaction(wikidb.DbMap)
 	t.Update(p).Insert(history)
 	return t.Subscribe()
 }
