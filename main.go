@@ -2,9 +2,11 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"code.google.com/p/go.crypto/bcrypt"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/zenazn/goji"
 	"github.com/zenazn/goji/web"
 
+	"github.com/bkaradzic/go-lz4"
 	"github.com/gorilla/sessions"
 )
 
@@ -23,9 +26,20 @@ const SESSION_NAME = "go_wiki_session"
 var store = sessions.NewCookieStore([]byte("something-very-secret")) // FIXME
 
 type Page struct {
-	Id    int64 `db:"post_id"`
-	Title string
-	Body  string
+	Id                 int64 `db:"post_id"`
+	Title              string
+	Body               string
+	LastModifiedUserId int64
+	LastModifiedDate   time.Time
+}
+
+type History struct {
+	Id             int64 `db:"history_id"`
+	PageId         int64
+	Title          []byte
+	Body           []byte
+	ModifiedUserId int64
+	ModifiedDate   time.Time
 }
 
 type User struct {
@@ -43,18 +57,127 @@ type LoginUser struct {
 	Name  string
 }
 
-func (p *Page) save(c web.C) error {
+type TransactionChain struct {
+	Transaction *gorp.Transaction
+	Error       error
+}
+
+func createTransaction(DbMap *gorp.DbMap) (*TransactionChain, error) {
+	t := TransactionChain{}
+	trans, err := DbMap.Begin()
+
+	if err != nil {
+		return nil, err
+	}
+
+	t.Transaction = trans
+	return &t, nil
+}
+
+func (t *TransactionChain) Insert(list ...interface{}) *TransactionChain {
+	if t.Error == nil {
+		t.Error = t.Transaction.Insert(list...)
+	}
+
+	return t
+}
+
+func (t *TransactionChain) Update(list ...interface{}) *TransactionChain {
+	if t.Error == nil {
+		_, t.Error = t.Transaction.Update(list...)
+	}
+
+	return t
+}
+
+func (t *TransactionChain) Subscribe() error {
+	if t.Error != nil {
+		t.Transaction.Rollback()
+		return t.Error
+	}
+
+	return t.Transaction.Commit()
+}
+
+func getUserId(r *http.Request) (int64, bool) {
+	session, _ := store.Get(r, SESSION_NAME)
+
+	if id, ok := session.Values["id"].(int64); ok {
+		return id, true
+	} else {
+		return 0, false
+	}
+}
+
+func encodeFromText(text string) ([]byte, error) {
+	return lz4.Encode(nil, []byte(text))
+}
+
+func decodeFromBlob(data []byte) (string, error) {
+	data, error := lz4.Decode(nil, data)
+	return string(data), error
+}
+
+func (p *Page) createHistoryData() (*History, error) {
+	title, err := encodeFromText(p.Title)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := encodeFromText(p.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	history := History{}
+	history.Title = title
+	history.Body = body
+	history.ModifiedUserId = p.LastModifiedUserId
+	history.ModifiedDate = p.LastModifiedDate
+
+	return &history, nil
+}
+
+func (p *Page) save(c web.C, r *http.Request) error {
+	id, hasid := getUserId(r)
+	if !hasid {
+		return errors.New("failed to get user id.") // FIXME
+	}
+
+	p.LastModifiedUserId = id
+	p.LastModifiedDate = time.Now()
+
+	history, err := p.createHistoryData()
+	if err != nil {
+		return err
+	}
+
 	wikidb := getWikiDb(c)
 	pOld := Page{}
-	err := wikidb.DbMap.SelectOne(&pOld, "select * from page where title=?", p.Title)
+
+	err = wikidb.DbMap.SelectOne(&pOld, "select * from page where title=?", p.Title)
 	if err == sql.ErrNoRows {
-		return wikidb.DbMap.Insert(p)
+		t, err := createTransaction(wikidb.DbMap)
+		if err != nil {
+			return err
+		}
+
+		t.Insert(p)
+
+		history.PageId = p.Id
+		t.Insert(history)
+
+		return t.Subscribe()
 	} else if err != nil {
 		log.Fatalln(err)
 	}
+
 	p.Id = pOld.Id
-	_, err = wikidb.DbMap.Update(p)
-	return err
+	history.PageId = p.Id
+
+	t, err := createTransaction(wikidb.DbMap)
+	t.Update(p).Insert(history)
+	return t.Subscribe()
 }
 
 func loadPage(c web.C, title string) (*Page, error) {
@@ -122,7 +245,7 @@ func saveHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	title := c.URLParams["title"]
 	body := r.FormValue("body")
 	p := &Page{Title: title, Body: body}
-	err := p.save(c)
+	err := p.save(c, r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -219,6 +342,15 @@ func createTable(db *sql.DB) (*gorp.DbMap, error) {
 	pageTable := dbmap.AddTableWithName(Page{}, "page").SetKeys(true, "Id")
 	pageTable.ColMap("Title").Rename("title")
 	pageTable.ColMap("Body").Rename("body")
+	pageTable.ColMap("LastModifiedUserId").Rename("lastuser")
+	pageTable.ColMap("LastModifiedDate").Rename("lastdate")
+
+	historyTable := dbmap.AddTableWithName(History{}, "history").SetKeys(true, "Id")
+	historyTable.ColMap("PageId").Rename("pageid")
+	historyTable.ColMap("Title").Rename("title")
+	historyTable.ColMap("Body").Rename("body")
+	historyTable.ColMap("ModifiedUserId").Rename("user")
+	historyTable.ColMap("ModifiedDate").Rename("date")
 
 	userTable := dbmap.AddTableWithName(User{}, "user").SetKeys(true, "Id")
 	userTable.ColMap("Name").SetUnique(true)

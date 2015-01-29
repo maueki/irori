@@ -1,4 +1,6 @@
 wiki.db
 go_wiki
 
+assets/js/*.js
+
 *~
