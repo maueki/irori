@@ -174,6 +174,11 @@ func getLoginUserInfo(c web.C, w http.ResponseWriter, r *http.Request) (*LoginUs
 	return &loginuser, nil
 }
 
+func executeWriterFromFile(w http.ResponseWriter, path string, context *pongo2.Context) error {
+	tpl := pongo2.Must(pongo2.FromFile(path))
+	return tpl.ExecuteWriter(*context, w)
+}
+
 func viewHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	viewTpl := pongo2.Must(pongo2.FromFile("view/view.html"))
 	title := c.URLParams["title"]
