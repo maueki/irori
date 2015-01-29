@@ -319,6 +319,8 @@ func addTestUser(dbmap *gorp.DbMap) {
 }
 
 func main() {
+	ReadConfig()
+
 	db, err := sql.Open("sqlite3", "./wiki.db")
 	if err != nil {
 		log.Fatalln(err)
