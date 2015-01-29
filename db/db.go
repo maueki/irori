@@ -5,13 +5,13 @@ import (
 	"runtime"
 )
 
-type DbAccessor struct {
+type DbTransaction struct {
 	Transaction *gorp.Transaction
 	Error       error
 }
 
-func CreateAccessor(DbMap *gorp.DbMap) (*DbAccessor, error) {
-	t := DbAccessor{}
+func CreateTransaction(DbMap *gorp.DbMap) (*DbTransaction, error) {
+	t := DbTransaction{}
 	trans, err := DbMap.Begin()
 
 	if err != nil {
@@ -24,11 +24,11 @@ func CreateAccessor(DbMap *gorp.DbMap) (*DbAccessor, error) {
 	return &t, nil
 }
 
-func finalizer(t *DbAccessor) {
+func finalizer(t *DbTransaction) {
 	t.Transaction.Rollback()
 }
 
-func (t *DbAccessor) Insert(list ...interface{}) *DbAccessor {
+func (t *DbTransaction) Insert(list ...interface{}) *DbTransaction {
 	if t.Error == nil {
 		t.Error = t.Transaction.Insert(list...)
 	}
@@ -36,7 +36,7 @@ func (t *DbAccessor) Insert(list ...interface{}) *DbAccessor {
 	return t
 }
 
-func (t *DbAccessor) Update(list ...interface{}) *DbAccessor {
+func (t *DbTransaction) Update(list ...interface{}) *DbTransaction {
 	if t.Error == nil {
 		_, t.Error = t.Transaction.Update(list...)
 	}
@@ -44,7 +44,7 @@ func (t *DbAccessor) Update(list ...interface{}) *DbAccessor {
 	return t
 }
 
-func (t *DbAccessor) Delete(list ...interface{}) *DbAccessor {
+func (t *DbTransaction) Delete(list ...interface{}) *DbTransaction {
 	if t.Error == nil {
 		_, t.Error = t.Transaction.Delete(list...)
 	}
@@ -52,7 +52,7 @@ func (t *DbAccessor) Delete(list ...interface{}) *DbAccessor {
 	return t
 }
 
-func (t *DbAccessor) Subscribe() error {
+func (t *DbTransaction) Subscribe() error {
 	if t.Error != nil {
 		t.Transaction.Rollback()
 		return t.Error
