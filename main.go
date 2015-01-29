@@ -438,21 +438,21 @@ func main() {
 	m.Get("/wiki", mainHandler)
 	m.Get("/", rootHandler)
 
-	userMux := web.New()
-	userMux.Use(needLogin)
+	// Mux : create new page or show a page created already
+	pageMux := web.New()
+	pageMux.Use(needLogin)
+	pageMux.Use(includeDb(dbmap))
+	pageMux.Get("/wiki/:title", viewHandler)
+	pageMux.Get("/wiki/:title/edit", editHandler)
+	pageMux.Post("/wiki/:title", saveHandler)
 
-	userMux.Use(includeDb(dbmap))
-
-	userMux.Get("/wiki/:title", viewHandler)
-	userMux.Get("/wiki/:title/edit", editHandler)
-	userMux.Post("/wiki/:title", saveHandler)
-
+	// Mux : convert Markdown to HTML which is send by Ajax
 	mdMux := web.New()
 	mdMux.Use(needLogin)
 	mdMux.Use(includeDb(dbmap))
 	mdMux.Post("/markdown", markdownHandler)
 
-	goji.Handle("/wiki/*", userMux)
+	goji.Handle("/wiki/*", pageMux)
 	goji.Get("/assets/*", http.FileServer(http.Dir(".")))
 	goji.Handle("/markdown", mdMux)
 	goji.Handle("/*", m)
