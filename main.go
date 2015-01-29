@@ -180,18 +180,16 @@ func executeWriterFromFile(w http.ResponseWriter, path string, context *pongo2.C
 }
 
 func viewHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	viewTpl := pongo2.Must(pongo2.FromFile("view/view.html"))
 	title := c.URLParams["title"]
 	p, _ := loadPage(c, title)
 	loginuser, _ := getLoginUserInfo(c, w, r)
-	err := viewTpl.ExecuteWriter(pongo2.Context{"loginuser": loginuser, "page": p}, w)
+	err := executeWriterFromFile(w, "view/view.html", &pongo2.Context{"loginuser": loginuser, "page": p})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func editHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	editTpl := pongo2.Must(pongo2.FromFile("view/edit.html"))
 	title := c.URLParams["title"]
 	p, err := loadPage(c, title)
 	if err != nil {
@@ -199,7 +197,7 @@ func editHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 
 	loginuser, _ := getLoginUserInfo(c, w, r)
-	err = editTpl.ExecuteWriter(pongo2.Context{"loginuser": loginuser, "page": p}, w)
+	err = executeWriterFromFile(w, "view/edit.html", &pongo2.Context{"loginuser": loginuser, "page": p})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -220,8 +218,7 @@ func saveHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 func getWikiDb(c web.C) *WikiDb { return c.Env["wikidb"].(*WikiDb) }
 
 func signupHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	signupTpl := pongo2.Must(pongo2.FromFile("view/signup.html"))
-	err := signupTpl.ExecuteWriter(pongo2.Context{}, w)
+	err := executeWriterFromFile(w, "view/signup.html", &pongo2.Context{})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -256,8 +253,7 @@ func signupPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func loginHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	loginTpl := pongo2.Must(pongo2.FromFile("view/login.html"))
-	err := loginTpl.ExecuteWriter(pongo2.Context{}, w)
+	err := executeWriterFromFile(w, "view/login.html", &pongo2.Context{})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -329,10 +325,8 @@ func createTable(db *sql.DB) (*gorp.DbMap, error) {
 }
 
 func mainHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	mainTpl := pongo2.Must(pongo2.FromFile("view/main.html"))
-
 	loginuser, _ := getLoginUserInfo(c, w, r)
-	err := mainTpl.ExecuteWriter(pongo2.Context{"loginuser": loginuser}, w)
+	err := executeWriterFromFile(w, "view/main.html", &pongo2.Context{"loginuser": loginuser})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
