@@ -32,7 +32,14 @@
 						<li><a href="#">マイページ</a></li>
 						<li><a href="#">設定</a></li>
 						<li class="divider"></li>
-						<li><a href="/logout">ログアウト</a></li>
+						<li><a href="javascript: logout()">ログアウト</a></li>
+						<form name="logout" action="/logout" method="POST">
+						  <script type="text/javascript">
+						    function logout(){
+						    document.logout.submit();
+						    }
+						  </script>
+						</form>
 					</ul>
 				</li>
 {% endif %}

@@ -401,7 +401,7 @@ func needLogin(c *web.C, h http.Handler) http.Handler {
 
 func addTestUser(dbmap *gorp.DbMap) {
 	user := &User{
-		Name:     "test",
+		Name: "test",
 		Password: []byte("$2a$10$1KbzrHDRoPwZuHxWs1D6lOSLpcCRyPZXJ1Q7sPFbBf03DSc8y8n8K"),
 	}
 
@@ -433,7 +433,7 @@ func main() {
 	m.Post("/signup", signupPostHandler)
 	m.Post("/login", loginPostHandler)
 
-	m.Get("/logout", logoutHandler)
+	m.Post("/logout", logoutHandler)
 	m.Get("/wiki", mainHandler)
 	m.Get("/", rootHandler)
 
