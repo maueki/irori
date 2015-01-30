@@ -2,8 +2,23 @@
 
 {% block title %}{{ page.Title }}{% endblock %}
 
+{% block posthead %}
+<link href="/assets/css/viewpage.css" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
-<h1>{{ page.Title }}</h1>
-<a class="btn btn-default btn-sm" href="/wiki/{{ page.Id }}/edit">記事を編集</a>
-<div>{{ page.Body|markdown|sanitize }}</div>
+<div class="viewpage">
+	<div class="viewpage-top">
+		<div class="container">
+			<h1>{{ page.Title }}</h1>
+			<a class="btn btn-default btn-sm" href="/wiki/{{ page.Id }}/edit">記事を編集</a>
+		</div>
+	</div>
+	<div class="viewpage-main">
+		<div class="container">
+			<div>{{ page.Body|markdown|sanitize }}</div>
+		</div>
+	</div>
+</div>
+<!-- </div> -->
 {% endblock %}
