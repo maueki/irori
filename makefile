@@ -12,5 +12,9 @@ go_wiki: $(GOSRC)
 coffee: $(COFFEESRC)
 	coffee -o $(COFFEEDIR) -c $^
 
+clean:
+	go clean
+	rm -f $(COFFEEDIR)/*.js
+
 test:
 	go test .
