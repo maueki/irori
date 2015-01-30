@@ -1,15 +1,13 @@
 
 GOSRC=main.go filter.go db/db.go
 COFFEEDIR=assets/js
-COFFEESRC=$(COFFEEDIR)/editor.coffee
+COFFEESRC=$(wildcard $(COFFEEDIR)/*.coffee)
 
-.PHONY: all
+.PHONY: all coffee
 all: go_wiki coffee
 
 go_wiki: $(GOSRC)
 	go get -d -v ./... && go build -v ./...
 
 coffee: $(COFFEESRC)
-	cd $(COFFEEDIR) && coffee -c *.coffee
-
-.PHONY: coffee
+	coffee -o $(COFFEEDIR) -c $^
