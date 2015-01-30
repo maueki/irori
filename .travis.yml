@@ -12,6 +12,7 @@ before_install:
 
 script:
     - make -j4
+    - make test
 
 go:
     - tip
