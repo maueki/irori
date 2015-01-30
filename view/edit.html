@@ -9,7 +9,7 @@
 {% block content %}
 <h1>Editing {{page.Title}}</h1>
 <div id="editor">
-  <form action="/wiki/{{page.Title}}" method="POST">
+  <form action="/wiki/{{page.Id}}" method="POST">
     <textarea name="body">{{ page.Body|stringformat:"%s" }}</textarea>
     <div id="output">{{page.Body|markdown|sanitize}}</div>
     <input type="submit" value="Save">
