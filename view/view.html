@@ -2,7 +2,7 @@
 
 {% block title %}{{ page.Title }}{% endblock %}
 
-{% block posthead %}
+{% block posthead_main %}
 <link href="/assets/css/viewpage.css" rel="stylesheet">
 {% endblock %}
 
@@ -10,8 +10,9 @@
 <div class="viewpage">
 	<div class="viewpage-top">
 		<div class="container">
-			<h1>{{ page.Title }}</h1>
-			<a class="btn btn-default btn-sm" href="/wiki/{{ page.Id }}/edit">記事を編集</a>
+			<h1 id="viewpage-title">{{ page.Title }}</h1>
+			<div id="viewpage-tagspace"></div>
+			<a id="viewpage-editbtn" class="btn btn-default btn-sm" href="/wiki/{{ page.Id }}/edit">記事を編集</a>
 		</div>
 	</div>
 	<div class="viewpage-main">

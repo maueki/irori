@@ -1,4 +1,21 @@
 .viewpage-top {
-	height: 150px;
+	height: auto;
+	padding-top: 10px;
+	margin-bottom: 30px;
 	background-color: #BED2D9
+}
+
+#viewpage-title {
+	margin-bottom: 5px;
+}
+
+#viewpage-tagspace {
+	height: 30px;
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
+
+#viewpage-editbtn {
+	margin-top: 10px;
+	margin-bottom: 10px;
 }
