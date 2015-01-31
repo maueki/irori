@@ -427,12 +427,8 @@ func main() {
 	m := web.New()
 	m.Get("/signup", signupPageGetHandler)
 	m.Get("/login", loginPageGetHandler)
-
-	goji.Use(includeDb(dbmap))
-
 	m.Post("/signup", signupPostHandler)
 	m.Post("/login", loginPostHandler)
-
 	m.Post("/logout", logoutPostHandler)
 	m.Get("/wiki", topPageGetHandler)
 	m.Get("/", rootHandler)
@@ -451,10 +447,10 @@ func main() {
 	mdMux.Use(includeDb(dbmap))
 	mdMux.Post("/markdown", markdownPostHandler)
 
-	goji.Handle("/wiki/*", pageMux)
+	goji.Use(includeDb(dbmap))
 	goji.Get("/assets/*", http.FileServer(http.Dir(".")))
+	goji.Handle("/wiki/*", pageMux)
 	goji.Handle("/markdown", mdMux)
 	goji.Handle("/*", m)
-
 	goji.Serve()
 }
