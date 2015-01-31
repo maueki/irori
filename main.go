@@ -179,7 +179,7 @@ func executeWriterFromFile(w http.ResponseWriter, path string, context *pongo2.C
 	return tpl.ExecuteWriter(*context, w)
 }
 
-func viewHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+func viewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	title := c.URLParams["title"]
 	p, _ := loadPage(c, title)
 	loginuser, _ := getLoginUserInfo(c, w, r)
@@ -189,7 +189,7 @@ func viewHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func editHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+func editPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	title := c.URLParams["title"]
 	p, err := loadPage(c, title)
 	if err != nil {
@@ -203,7 +203,7 @@ func editHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func saveHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+func savePagePostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	title := c.URLParams["title"]
 	body := r.FormValue("body")
 	p := &Page{Title: title, Body: body}
@@ -217,7 +217,7 @@ func saveHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 func getWikiDb(c web.C) *WikiDb { return c.Env["wikidb"].(*WikiDb) }
 
-func signupHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+func signupPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	err := executeWriterFromFile(w, "view/signup.html", &pongo2.Context{})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -252,7 +252,7 @@ func signupPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/wiki", http.StatusFound)
 }
 
-func loginHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+func loginPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	err := executeWriterFromFile(w, "view/login.html", &pongo2.Context{})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -324,7 +324,7 @@ func createTable(db *sql.DB) (*gorp.DbMap, error) {
 	return dbmap, err
 }
 
-func mainHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+func topPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	loginuser, _ := getLoginUserInfo(c, w, r)
 	err := executeWriterFromFile(w, "view/main.html", &pongo2.Context{"loginuser": loginuser})
 	if err != nil {
@@ -336,7 +336,7 @@ func rootHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/wiki", http.StatusFound)
 }
 
-func logoutHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+func logoutPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	session, _ := store.Get(r, SESSION_NAME)
 	delete(session.Values, "id")
 	sessions.Save(r, w)
@@ -344,7 +344,7 @@ func logoutHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/wiki", http.StatusFound)
 }
 
-func markdownHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+func markdownPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	tpl, err := pongo2.FromString("{{text|markdown|sanitize}}")
 	if err != nil {
 		panic(err)
@@ -401,7 +401,7 @@ func needLogin(c *web.C, h http.Handler) http.Handler {
 
 func addTestUser(dbmap *gorp.DbMap) {
 	user := &User{
-		Name: "test",
+		Name:     "test",
 		Password: []byte("$2a$10$1KbzrHDRoPwZuHxWs1D6lOSLpcCRyPZXJ1Q7sPFbBf03DSc8y8n8K"),
 	}
 
@@ -425,31 +425,31 @@ func main() {
 	addTestUser(dbmap)
 
 	m := web.New()
-	m.Get("/signup", signupHandler)
-	m.Get("/login", loginHandler)
+	m.Get("/signup", signupPageGetHandler)
+	m.Get("/login", loginPageGetHandler)
 
 	goji.Use(includeDb(dbmap))
 
 	m.Post("/signup", signupPostHandler)
 	m.Post("/login", loginPostHandler)
 
-	m.Post("/logout", logoutHandler)
-	m.Get("/wiki", mainHandler)
+	m.Post("/logout", logoutPostHandler)
+	m.Get("/wiki", topPageGetHandler)
 	m.Get("/", rootHandler)
 
 	// Mux : create new page or show a page created already
 	pageMux := web.New()
 	pageMux.Use(needLogin)
 	pageMux.Use(includeDb(dbmap))
-	pageMux.Get("/wiki/:title", viewHandler)
-	pageMux.Get("/wiki/:title/edit", editHandler)
-	pageMux.Post("/wiki/:title", saveHandler)
+	pageMux.Get("/wiki/:title", viewPageGetHandler)
+	pageMux.Get("/wiki/:title/edit", editPageGetHandler)
+	pageMux.Post("/wiki/:title", savePagePostHandler)
 
 	// Mux : convert Markdown to HTML which is send by Ajax
 	mdMux := web.New()
 	mdMux.Use(needLogin)
 	mdMux.Use(includeDb(dbmap))
-	mdMux.Post("/markdown", markdownHandler)
+	mdMux.Post("/markdown", markdownPostHandler)
 
 	goji.Handle("/wiki/*", pageMux)
 	goji.Get("/assets/*", http.FileServer(http.Dir(".")))
