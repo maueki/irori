@@ -4,10 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/maueki/go_wiki/db"
+	//"github.com/maueki/go_wiki/db"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"code.google.com/p/go.crypto/bcrypt"
@@ -21,6 +20,9 @@ import (
 
 	"github.com/bkaradzic/go-lz4"
 	"github.com/gorilla/sessions"
+
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 const SESSION_NAME = "go_wiki_session"
@@ -28,30 +30,38 @@ const SESSION_NAME = "go_wiki_session"
 var store = sessions.NewCookieStore([]byte("something-very-secret")) // FIXME
 
 type Page struct {
-	Id                 int64 `db:"post_id"`
-	Title              string
-	Body               string
-	LastModifiedUserId int64
-	LastModifiedDate   time.Time
+	Id      bson.ObjectId `bson:"_id"`
+	Article Article
+	History []History
+}
+
+type UserRef struct {
+	Ref string        `bson:"$ref"`
+	Id  bson.ObjectId `bson:"$id"`
+}
+
+type Article struct {
+	Title string
+	Body  string
+	User  UserRef
+	Date  time.Time
 }
 
 type History struct {
-	Id             int64 `db:"history_id"`
-	PageId         int64
-	Title          []byte
-	Body           []byte
-	ModifiedUserId int64
-	ModifiedDate   time.Time
+	Title []byte
+	Body  []byte
+	User  UserRef
+	Date  time.Time
 }
 
 type User struct {
-	Id       int64  `db:"user_id"`
-	Name     string `db:"name"`
-	Password []byte `db:"password"`
+	Id       bson.ObjectId `bson:"_id,omitempty"`
+	Name     string
+	Password []byte
 }
 
 type WikiDb struct {
-	DbMap *gorp.DbMap
+	Db *mgo.Database
 }
 
 type LoginUser struct {
@@ -59,13 +69,13 @@ type LoginUser struct {
 	Name  string
 }
 
-func getUserId(r *http.Request) (int64, bool) {
+func getUserId(r *http.Request) (string, bool) {
 	session, _ := store.Get(r, SESSION_NAME)
 
-	if id, ok := session.Values["id"].(int64); ok {
-		return id, true
+	if id, ok := session.Values["id"]; ok {
+		return id.(string), true
 	} else {
-		return 0, false
+		return "", false
 	}
 }
 
@@ -78,13 +88,13 @@ func decodeFromBlob(data []byte) (string, error) {
 	return string(data), error
 }
 
-func (p *Page) createHistoryData() (*History, error) {
-	title, err := encodeFromText(p.Title)
+func (a *Article) createHistoryData() (*History, error) {
+	title, err := encodeFromText(a.Title)
 	if err != nil {
 		return nil, err
 	}
 
-	body, err := encodeFromText(p.Body)
+	body, err := encodeFromText(a.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -92,8 +102,8 @@ func (p *Page) createHistoryData() (*History, error) {
 	history := History{}
 	history.Title = title
 	history.Body = body
-	history.ModifiedUserId = p.LastModifiedUserId
-	history.ModifiedDate = p.LastModifiedDate
+	history.User = a.User
+	history.Date = a.Date
 
 	return &history, nil
 }
@@ -104,57 +114,46 @@ func (p *Page) save(c web.C, r *http.Request) error {
 		return errors.New("failed to get user id.") // FIXME
 	}
 
-	p.LastModifiedUserId = id
-	p.LastModifiedDate = time.Now()
-
-	history, err := p.createHistoryData()
+	history, err := p.Article.createHistoryData()
 	if err != nil {
 		return err
 	}
 
+	p.Article.User.Id = bson.ObjectIdHex(id)
+	p.Article.User.Ref = "user"
+	p.Article.Date = time.Now()
+
 	wikidb := getWikiDb(c)
-	pOld := Page{}
-
-	err = wikidb.DbMap.SelectOne(&pOld, "select * from page where post_id=?", p.Id)
-	if err == sql.ErrNoRows {
-		t, err := db.CreateTransaction(wikidb.DbMap)
-		if err != nil {
-			return err
-		}
-
-		t.Insert(p)
-
-		history.PageId = p.Id
-		t.Insert(history)
-
-		return t.Subscribe()
-	} else if err != nil {
-		log.Fatalln(err)
-	}
-
-	p.Id = pOld.Id
-	history.PageId = p.Id
-
-	t, err := db.CreateTransaction(wikidb.DbMap)
-	t.Update(p).Insert(history)
-	return t.Subscribe()
+	return wikidb.Db.C("page").UpdateId(p.Id,
+		bson.M{"$set": bson.M{"article": p.Article},
+			"$push": bson.M{"history": history}})
 }
 
-func getPageFromDb(c web.C, pageId_str string) (*Page, error) {
+func getPageFromDb(c web.C, pageId string) (*Page, error) {
 	wikidb := getWikiDb(c)
 
-	pageId, _ := strconv.ParseInt(pageId_str, 10, 64) // FIXME : err
+	if !bson.IsObjectIdHex(pageId) {
+		return nil, mgo.ErrNotFound
+	}
+
+	id := bson.ObjectIdHex(pageId)
 
 	p := Page{}
-	err := wikidb.DbMap.SelectOne(&p, "select * from page where post_id=?", pageId)
+	err := wikidb.Db.C("page").FindId(id).One(&p)
 	if err != nil {
-		fmt.Printf("getPageFromDb failed : %s\n", pageId_str)
+		fmt.Printf("getPageFromDb failed : %s\n", pageId)
 		return nil, err
 	}
 
-	fmt.Printf("getPageFromDb success : %s\n", pageId_str)
+	fmt.Printf("getPageFromDb success : %s\n", pageId)
 
 	return &p, nil
+}
+
+func getUserById(db *mgo.Database, id bson.ObjectId) (*User, error) {
+	user := User{}
+	err := db.C("user").FindId(id).One(&user)
+	return &user, err
 }
 
 func getLoginUserInfo(c web.C, w http.ResponseWriter, r *http.Request) (*LoginUser, error) {
@@ -165,9 +164,8 @@ func getLoginUserInfo(c web.C, w http.ResponseWriter, r *http.Request) (*LoginUs
 	id, ok := session.Values["id"]
 	if ok {
 		wikidb := getWikiDb(c)
-		user := User{}
-		err := wikidb.DbMap.SelectOne(&user, "select * from user where user_id=?", id)
-		if err == sql.ErrNoRows {
+		user, err := getUserById(wikidb.Db, bson.ObjectIdHex(id.(string)))
+		if err == mgo.ErrNotFound {
 			delete(session.Values, "id")
 			sessions.Save(r, w)
 			fmt.Printf("not login\n")
@@ -190,25 +188,27 @@ func executeWriterFromFile(w http.ResponseWriter, path string, context *pongo2.C
 func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	wikidb := getWikiDb(c)
 
-	p := &Page{Title: "", Body: ""}
-	t, err := db.CreateTransaction(wikidb.DbMap)
+	id, _ := getUserId(r)
+
+	p := &Page{
+		Id: bson.NewObjectId(),
+		Article: Article{Title: "", Body: "", Date: time.Now(), User: UserRef{Id: bson.ObjectIdHex(id), Ref: "user"}}}
+	fmt.Println(p.Id.Hex())
+	err := wikidb.Db.C("page").Insert(p)
 	if err != nil {
-		return
+		log.Fatalln("createNewPage:", err)
 	}
+	pageId := p.Id.Hex()
 
-	t.Insert(p)
-	t.Subscribe()
+	fmt.Printf("createNewPage pageId_str : %s\n", pageId)
 
-	pageId_str := strconv.FormatInt(p.Id, 10)
-	fmt.Printf("createNewPage pageId_str : %s\n", pageId_str)
-
-	http.Redirect(w, r, "/wiki/"+pageId_str+"/edit", http.StatusFound)
+	http.Redirect(w, r, "/wiki/"+pageId+"/edit", http.StatusFound)
 }
 
 func viewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	pageId_str := c.URLParams["pageId"]
+	pageId := c.URLParams["pageId"]
 
-	p, err := getPageFromDb(c, pageId_str)
+	p, err := getPageFromDb(c, pageId)
 	if p == nil || err != nil {
 		// FIXME : redirect to top page or "NotFound" page
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -224,9 +224,9 @@ func viewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func editPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	pageId_str := c.URLParams["pageId"]
+	pageId := c.URLParams["pageId"]
 
-	p, err := getPageFromDb(c, pageId_str)
+	p, err := getPageFromDb(c, pageId)
 	if err != nil {
 		// FIXME : redirect to top page or "NotFound" page
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -242,23 +242,25 @@ func editPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func savePagePostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	pageId_str := c.URLParams["pageId"]
+	pageId := c.URLParams["pageId"]
 
-	p, err := getPageFromDb(c, pageId_str)
+	fmt.Println("pageid:", pageId)
+
+	p, err := getPageFromDb(c, pageId)
 	if err != nil {
 		// FIXME : redirect to top page or "NotFound" page
 		http.Error(w, err.Error(), http.StatusNotFound)
 	}
 
-	p.Title = r.FormValue("title")
-	p.Body = r.FormValue("body")
+	p.Article.Title = r.FormValue("title")
+	p.Article.Body = r.FormValue("body")
 	err = p.save(c, r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, "/wiki/"+pageId_str, http.StatusFound)
+	http.Redirect(w, r, "/wiki/"+pageId, http.StatusFound)
 }
 
 func getWikiDb(c web.C) *WikiDb { return c.Env["wikidb"].(*WikiDb) }
@@ -285,14 +287,24 @@ func signupPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 
 	user := &User{Name: name, Password: HashPassword(password)}
-	err := wikidb.DbMap.Insert(user)
+
+	// Register user only if not found.
+	changeinfo, err := wikidb.Db.C("user").Upsert(bson.M{"name": name},
+		bson.M{"$setOnInsert": user})
 	if err != nil {
+		log.Println(err)
+		executeWriterFromFile(w, "view/signup.html", &pongo2.Context{"error": "Incorrect, please try again."})
+		return
+	}
+
+	if changeinfo.UpsertedId == nil {
+		log.Println("user.Name already exists:", name)
 		executeWriterFromFile(w, "view/signup.html", &pongo2.Context{"error": "Incorrect, please try again."})
 		return
 	}
 
 	session, _ := store.Get(r, SESSION_NAME)
-	session.Values["id"] = user.Id
+	session.Values["id"] = changeinfo.UpsertedId.(bson.ObjectId).Hex()
 	sessions.Save(r, w)
 
 	http.Redirect(w, r, "/wiki", http.StatusFound)
@@ -322,12 +334,11 @@ func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 
 	user := User{}
-	err := wikidb.DbMap.SelectOne(&user, "select * from user where name=?", name)
-
+	err := wikidb.Db.C("user").Find(bson.M{"name": name}).One(&user)
 	if err == nil {
 		err = bcrypt.CompareHashAndPassword(user.Password, []byte(password))
 		if err == nil {
-			session.Values["id"] = user.Id
+			session.Values["id"] = user.Id.Hex()
 			sessions.Save(r, w)
 			http.Redirect(w, r, "/wiki", http.StatusFound)
 			return
@@ -351,9 +362,6 @@ func createTable(db *sql.DB) (*gorp.DbMap, error) {
 	historyTable.ColMap("Body").Rename("body")
 	historyTable.ColMap("ModifiedUserId").Rename("user")
 	historyTable.ColMap("ModifiedDate").Rename("date")
-
-	userTable := dbmap.AddTableWithName(User{}, "user").SetKeys(true, "Id")
-	userTable.ColMap("Name").SetUnique(true)
 
 	dbmap.DropTables()
 	err := dbmap.CreateTables()
@@ -398,9 +406,9 @@ func markdownPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func includeDb(dbmap *gorp.DbMap) func(c *web.C, h http.Handler) http.Handler {
+func includeDb(db *mgo.Database) func(c *web.C, h http.Handler) http.Handler {
 	wikidb := &WikiDb{
-		DbMap: dbmap,
+		Db: db,
 	}
 
 	return func(c *web.C, h http.Handler) http.Handler {
@@ -422,9 +430,8 @@ func needLogin(c *web.C, h http.Handler) http.Handler {
 		}
 
 		wikidb := getWikiDb(*c)
-		user := User{}
-		err := wikidb.DbMap.SelectOne(&user, "select * from user where user_id=?", id)
-		if err == sql.ErrNoRows {
+		_, err := getUserById(wikidb.Db, bson.ObjectIdHex(id.(string)))
+		if err == mgo.ErrNotFound {
 			delete(session.Values, "id")
 			sessions.Save(r, w)
 
@@ -439,30 +446,34 @@ func needLogin(c *web.C, h http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-func addTestUser(dbmap *gorp.DbMap) {
+func addTestUser(db *mgo.Database) {
+	db.C("user").RemoveAll(nil) // FIXME
+
 	user := &User{
-		Name:     "test",
+		Name: "test",
 		Password: []byte("$2a$10$1KbzrHDRoPwZuHxWs1D6lOSLpcCRyPZXJ1Q7sPFbBf03DSc8y8n8K"),
 	}
 
-	dbmap.Insert(user)
+	err := db.C("user").Insert(user)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 func main() {
 	ReadConfig()
 
-	db, err := sql.Open("sqlite3", "./wiki.db")
+	session, err := mgo.Dial("localhost")
 	if err != nil {
 		log.Fatalln(err)
 	}
+	defer session.Close()
 
-	dbmap, err := createTable(db)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer dbmap.Db.Close()
+	session.SetMode(mgo.Monotonic, true)
 
-	addTestUser(dbmap)
+	db := session.DB("gowiki")
+
+	addTestUser(db)
 
 	m := web.New()
 	m.Get("/signup", signupPageGetHandler)
@@ -475,13 +486,13 @@ func main() {
 
 	loginUserActionMux := web.New()
 	loginUserActionMux.Use(needLogin)
-	loginUserActionMux.Use(includeDb(dbmap))
+	loginUserActionMux.Use(includeDb(db))
 	loginUserActionMux.Get("/action/createNewPage", createNewPageGetHandler)
 
 	// Mux : create new page or show a page created already
 	pageMux := web.New()
 	pageMux.Use(needLogin)
-	pageMux.Use(includeDb(dbmap))
+	pageMux.Use(includeDb(db))
 	pageMux.Get("/wiki/:pageId", viewPageGetHandler)
 	pageMux.Get("/wiki/:pageId/edit", editPageGetHandler)
 	pageMux.Post("/wiki/:pageId", savePagePostHandler)
@@ -489,10 +500,10 @@ func main() {
 	// Mux : convert Markdown to HTML which is send by Ajax
 	mdMux := web.New()
 	mdMux.Use(needLogin)
-	mdMux.Use(includeDb(dbmap))
+	mdMux.Use(includeDb(db))
 	mdMux.Post("/markdown", markdownPostHandler)
 
-	goji.Use(includeDb(dbmap))
+	goji.Use(includeDb(db))
 	goji.Get("/assets/*", http.FileServer(http.Dir(".")))
 	goji.Handle("/wiki/*", pageMux)
 	goji.Handle("/markdown", mdMux)

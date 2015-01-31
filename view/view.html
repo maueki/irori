@@ -1,6 +1,6 @@
 {% extends "navbar.html" %}
 
-{% block title %}{{ page.Title }}{% endblock %}
+{% block title %}{{ page.Article.Title }}{% endblock %}
 
 {% block posthead_main %}
 <link href="/assets/css/viewpage.css" rel="stylesheet">
@@ -10,16 +10,15 @@
 <div class="viewpage">
 	<div class="viewpage-top">
 		<div class="container">
-			<h1 id="viewpage-title">{{ page.Title }}</h1>
+			<h1 id="viewpage-title">{{ page.Article.Title }}</h1>
 			<div id="viewpage-tagspace"></div>
-			<a id="viewpage-editbtn" class="btn btn-default btn-sm" href="/wiki/{{ page.Id }}/edit">記事を編集</a>
+			<a id="viewpage-editbtn" class="btn btn-default btn-sm" href="/wiki/{{ page.Id.Hex() }}/edit">記事を編集</a>
 		</div>
 	</div>
 	<div class="viewpage-main">
 		<div class="container">
-			<div>{{ page.Body|markdown|sanitize }}</div>
+			<div>{{ page.Article.Body|markdown|sanitize }}</div>
 		</div>
 	</div>
 </div>
-<!-- </div> -->
 {% endblock %}

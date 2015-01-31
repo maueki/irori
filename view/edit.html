@@ -1,6 +1,6 @@
 {% extends "navbar.html" %}
 
-{% block title %}{{page.Title}}{% endblock %}
+{% block title %}{{page.Article.Title}}{% endblock %}
 
 {% block posthead_main %}
 <link href="/assets/css/editor.css" rel="stylesheet">
@@ -9,11 +9,11 @@
 {% block content %}
 <div class="container">
 	<div id="editor">
-		<form action="/wiki/{{page.Id}}" method="POST">
+		<form action="/wiki/{{page.Id.Hex()}}" method="POST">
 			<input type="text" name="title"
-				class="form-control" value="{{page.Title}}" placeholder="タイトル">
-			<textarea name="body">{{ page.Body|stringformat:"%s" }}</textarea>
-			<div id="output">{{page.Body|markdown|sanitize}}</div>
+			class="form-control" value="{{page.Article.Title}}" placeholder="タイトル">
+			<textarea name="body">{{ page.Article.Body|stringformat:"%s" }}</textarea>
+			<div id="output">{{page.Article.Body|markdown|sanitize}}</div>
 			<input type="submit" value="Save">
 		</form>
 	</div>
