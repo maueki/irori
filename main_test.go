@@ -40,7 +40,7 @@ func TestSample(t *testing.T) {
 
 	m := web.New()
 	m.Use(testDb(dbmap))
-	m.Get("/wiki", mainHandler)
+	m.Get("/wiki", topPageGetHandler)
 	s := httptest.NewServer(m)
 	defer s.Close()
 
