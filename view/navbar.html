@@ -25,7 +25,7 @@
 {% if not loginuser.Exist %}
 				<li><a href="/login">ログイン</a></li>
 {% else %}
-				<li><a href="/wiki/{{ loginuser.Name }}/edit">記事作成</a></li>
+				<li><a href="/action/createNewPage">記事作成</a></li>
 				<li class="dropdown">
 					<a class="dropdown-toggle" data-toggle="dropdown" href="#">{{ loginuser.Name }}<span class="caret"></span></a>
 					<ul class="dropdown-menu">

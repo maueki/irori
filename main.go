@@ -7,6 +7,7 @@ import (
 	"github.com/maueki/go_wiki/db"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"code.google.com/p/go.crypto/bcrypt"
@@ -114,7 +115,7 @@ func (p *Page) save(c web.C, r *http.Request) error {
 	wikidb := getWikiDb(c)
 	pOld := Page{}
 
-	err = wikidb.DbMap.SelectOne(&pOld, "select * from page where title=?", p.Title)
+	err = wikidb.DbMap.SelectOne(&pOld, "select * from page where post_id=?", p.Id)
 	if err == sql.ErrNoRows {
 		t, err := db.CreateTransaction(wikidb.DbMap)
 		if err != nil {
@@ -139,13 +140,20 @@ func (p *Page) save(c web.C, r *http.Request) error {
 	return t.Subscribe()
 }
 
-func loadPage(c web.C, title string) (*Page, error) {
+func getPageFromDb(c web.C, pageId_str string) (*Page, error) {
 	wikidb := getWikiDb(c)
+
+	pageId, _ := strconv.ParseInt(pageId_str, 10, 64) // FIXME : err
+
 	p := Page{}
-	err := wikidb.DbMap.SelectOne(&p, "select * from page where title=?", title)
+	err := wikidb.DbMap.SelectOne(&p, "select * from page where post_id=?", pageId)
 	if err != nil {
+		fmt.Printf("getPageFromDb failed : %s\n", pageId_str)
 		return nil, err
 	}
+
+	fmt.Printf("getPageFromDb success : %s\n", pageId_str)
+
 	return &p, nil
 }
 
@@ -179,40 +187,77 @@ func executeWriterFromFile(w http.ResponseWriter, path string, context *pongo2.C
 	return tpl.ExecuteWriter(*context, w)
 }
 
+func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	wikidb := getWikiDb(c)
+
+	p := &Page{Title: "タイトル未設定", Body: ""}
+	t, err := db.CreateTransaction(wikidb.DbMap)
+	if err != nil {
+		return
+	}
+
+	t.Insert(p)
+	t.Subscribe()
+
+	pageId_str := strconv.FormatInt(p.Id, 10)
+	fmt.Printf("createNewPage pageId_str : %s\n", pageId_str)
+
+	http.Redirect(w, r, "/wiki/"+pageId_str+"/edit", http.StatusFound)
+}
+
 func viewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	title := c.URLParams["title"]
-	p, _ := loadPage(c, title)
+	pageId_str := c.URLParams["pageId"]
+
+	p, err := getPageFromDb(c, pageId_str)
+	if p == nil || err != nil {
+		// FIXME : redirect to top page or "NotFound" page
+		http.Error(w, err.Error(), http.StatusNotFound)
+	}
+
 	loginuser, _ := getLoginUserInfo(c, w, r)
-	err := executeWriterFromFile(w, "view/view.html", &pongo2.Context{"loginuser": loginuser, "page": p})
+
+	err = executeWriterFromFile(w, "view/view.html",
+		&pongo2.Context{"loginuser": loginuser, "page": p})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func editPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	title := c.URLParams["title"]
-	p, err := loadPage(c, title)
+	pageId_str := c.URLParams["pageId"]
+
+	p, err := getPageFromDb(c, pageId_str)
 	if err != nil {
-		p = &Page{Title: title}
+		// FIXME : redirect to top page or "NotFound" page
+		http.Error(w, err.Error(), http.StatusNotFound)
 	}
 
 	loginuser, _ := getLoginUserInfo(c, w, r)
-	err = executeWriterFromFile(w, "view/edit.html", &pongo2.Context{"loginuser": loginuser, "page": p})
+
+	err = executeWriterFromFile(w, "view/edit.html",
+		&pongo2.Context{"loginuser": loginuser, "page": p})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func savePagePostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	title := c.URLParams["title"]
-	body := r.FormValue("body")
-	p := &Page{Title: title, Body: body}
-	err := p.save(c, r)
+	pageId_str := c.URLParams["pageId"]
+
+	p, err := getPageFromDb(c, pageId_str)
+	if err != nil {
+		// FIXME : redirect to top page or "NotFound" page
+		http.Error(w, err.Error(), http.StatusNotFound)
+	}
+
+	p.Body = r.FormValue("body")
+	err = p.save(c, r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/wiki/"+title, http.StatusFound)
+
+	http.Redirect(w, r, "/wiki/"+pageId_str, http.StatusFound)
 }
 
 func getWikiDb(c web.C) *WikiDb { return c.Env["wikidb"].(*WikiDb) }
@@ -433,13 +478,18 @@ func main() {
 	m.Get("/wiki", topPageGetHandler)
 	m.Get("/", rootHandler)
 
+	loginUserActionMux := web.New()
+	loginUserActionMux.Use(needLogin)
+	loginUserActionMux.Use(includeDb(dbmap))
+	loginUserActionMux.Get("/action/createNewPage", createNewPageGetHandler)
+
 	// Mux : create new page or show a page created already
 	pageMux := web.New()
 	pageMux.Use(needLogin)
 	pageMux.Use(includeDb(dbmap))
-	pageMux.Get("/wiki/:title", viewPageGetHandler)
-	pageMux.Get("/wiki/:title/edit", editPageGetHandler)
-	pageMux.Post("/wiki/:title", savePagePostHandler)
+	pageMux.Get("/wiki/:pageId", viewPageGetHandler)
+	pageMux.Get("/wiki/:pageId/edit", editPageGetHandler)
+	pageMux.Post("/wiki/:pageId", savePagePostHandler)
 
 	// Mux : convert Markdown to HTML which is send by Ajax
 	mdMux := web.New()
@@ -451,6 +501,7 @@ func main() {
 	goji.Get("/assets/*", http.FileServer(http.Dir(".")))
 	goji.Handle("/wiki/*", pageMux)
 	goji.Handle("/markdown", mdMux)
+	goji.Handle("/action/*", loginUserActionMux)
 	goji.Handle("/*", m)
 	goji.Serve()
 }
