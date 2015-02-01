@@ -4,5 +4,6 @@
 
 {% block content %}
 <h1>{{ page.Title }}</h1>
+<a class="btn btn-default btn-sm" href="/wiki/{{ page.Id }}/edit">記事を編集</a>
 <div>{{ page.Body|markdown|sanitize }}</div>
 {% endblock %}
