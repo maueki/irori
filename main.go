@@ -322,24 +322,18 @@ func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	user := User{}
 	err := wikidb.DbMap.SelectOne(&user, "select * from user where name=?", name)
-	if err == sql.ErrNoRows {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	} else if err != nil {
-		log.Fatalln(err)
+
+	if err == nil {
+		err = bcrypt.CompareHashAndPassword(user.Password, []byte(password))
+		if err == nil {
+			session.Values["id"] = user.Id
+			sessions.Save(r, w)
+			http.Redirect(w, r, "/wiki", http.StatusFound)
+			return
+		}
 	}
 
-	err = bcrypt.CompareHashAndPassword(user.Password, []byte(password))
-	if err != nil {
-		// TODO: login failed
-		http.Redirect(w, r, "/login", http.StatusFound)
-		return
-	}
-
-	session.Values["id"] = user.Id
-	sessions.Save(r, w)
-
-	http.Redirect(w, r, "/wiki", http.StatusFound)
+	executeWriterFromFile(w, "view/login.html", &pongo2.Context{"error": "Incorrect username or password."})
 }
 
 func createTable(db *sql.DB) (*gorp.DbMap, error) {
