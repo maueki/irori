@@ -10,6 +10,7 @@
 <div class="container">
   <form class="form-signin" accept-charset="ascii" action="/login" method="POST">
     <h2 class="form-signin-heading"> Please Login </h2>
+    <div class="form-signin-heading" data-alert-type="danger" data-alert-value='{{ error }}'> </div>
     <label for="login_field" class="sr-only">Username</label>
     <input autocorrect="off" name="username" id="login_field" type="text" class="form-control" placeholder="Username" required autofocus>
     <label for="password" class="sr-only">Password</label>
