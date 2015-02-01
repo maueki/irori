@@ -5,6 +5,10 @@
 
 A simple and small system for managing documents.
 
+# Requirements
+
+MongoDB
+
 # build & start
 
 ```
