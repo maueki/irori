@@ -190,7 +190,7 @@ func executeWriterFromFile(w http.ResponseWriter, path string, context *pongo2.C
 func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	wikidb := getWikiDb(c)
 
-	p := &Page{Title: "タイトル未設定", Body: ""}
+	p := &Page{Title: "", Body: ""}
 	t, err := db.CreateTransaction(wikidb.DbMap)
 	if err != nil {
 		return
@@ -250,6 +250,7 @@ func savePagePostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 	}
 
+	p.Title = r.FormValue("title")
 	p.Body = r.FormValue("body")
 	err = p.save(c, r)
 	if err != nil {
