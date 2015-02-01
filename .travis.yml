@@ -16,3 +16,6 @@ script:
 
 go:
     - tip
+
+services:
+    - mongodb
