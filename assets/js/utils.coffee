@@ -1,5 +1,14 @@
 
 $ ->
+  $('div[data-alert-type]').each ->
+    type = this.getAttribute('data-alert-type')
+    value = this.getAttribute('data-alert-value')
+
+    if value?.length != 0
+      switch type
+        when 'danger', 'warning', 'info', 'success'
+          displayAlert(this, type, value)
+
   $(document).on 'click', 'a[data-method]', ->
     link = $(@)
     method = link.data('method').toLowerCase()
@@ -13,3 +22,13 @@ $ ->
     form.hide().append(metadataInput).appendTo('body')
     form.submit()
     return false
+
+
+displayAlert = (parentElement, type, text) ->
+  element = document.createElement('div')
+  element.setAttribute('class', "alert alert-#{type}")
+  element.setAttribute('role', 'alert')
+  element.innerHTML = text
+
+  if parentElement
+    parentElement.appendChild(element)

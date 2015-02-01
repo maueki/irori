@@ -21,7 +21,7 @@ func testDb(dbmap *gorp.DbMap, mongodb *mgo.Database) func(c *web.C, h http.Hand
 
 	return func(c *web.C, h http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			c.Env = map[string]interface{}{"wikidb": wikidb}
+			c.Env = map[interface{}]interface{}{"wikidb": wikidb}
 			//c.Env["wikidb"] = wikidb
 			h.ServeHTTP(w, r)
 		}
