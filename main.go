@@ -286,7 +286,7 @@ func signupPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	user := &User{Name: name, Password: HashPassword(password)}
 	err := wikidb.DbMap.Insert(user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		executeWriterFromFile(w, "view/signup.html", &pongo2.Context{"error": "Incorrect, please try again."})
 		return
 	}
 
