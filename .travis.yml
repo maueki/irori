@@ -8,7 +8,7 @@ cache:
 language: go
 
 before_install:
-    - sudo apt-get install -y coffeescript
+    - sudo apt-get install -y coffeescript mongodb
 
 script:
     - make -j4
