@@ -103,6 +103,7 @@ func (a *Article) createHistoryData() (*History, error) {
 	history.Title = title
 	history.Body = body
 	history.User = a.User
+	history.Date = a.Date
 
 	return &history, nil
 }
@@ -131,7 +132,9 @@ func (p *Page) save(c web.C, r *http.Request) error {
 func getPageFromDb(c web.C, pageId string) (*Page, error) {
 	wikidb := getWikiDb(c)
 
-	fmt.Println("pageId:", pageId)
+	if !bson.IsObjectIdHex(pageId) {
+		return nil, mgo.ErrNotFound
+	}
 
 	id := bson.ObjectIdHex(pageId)
 
@@ -332,7 +335,8 @@ func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	user := User{}
 	err := wikidb.Db.C("user").Find(bson.M{"name": name}).One(&user)
 	if err == mgo.ErrNotFound {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		fmt.Println("!!! login failed")
+		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	} else if err != nil {
 		log.Fatalln(err)
