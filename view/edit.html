@@ -18,7 +18,7 @@
 		</div><!-- row -->
 
 		<!-- main editor -->
-		<div class="row">
+		<div class="row" id="editpage-body-row">
 			<div class="col-xs-6">
 				<textarea name="body" id="body-editor">{{ page.Article.Body|stringformat:"%s" }}</textarea>
 			</div>
@@ -29,7 +29,7 @@
 		</div><!-- row -->
 
 		<!-- action btn -->
-		<div class="row">
+		<div class="row" id="editpage-action-btn-row">
 			<div class="col-xs-12">
 				{% if isEditor %}
 				<input type="submit" class="btn btn-primary pull-right" value="Save">
