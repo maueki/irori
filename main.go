@@ -192,7 +192,7 @@ func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	p := &Page{
 		Id: bson.NewObjectId(),
-		Article: Article{Title: "タイトル未設定", Body: "", Date: time.Now(), User: UserRef{Id: bson.ObjectIdHex(id), Ref: "user"}}}
+		Article: Article{Title: "", Body: "", Date: time.Now(), User: UserRef{Id: bson.ObjectIdHex(id), Ref: "user"}}}
 	fmt.Println(p.Id.Hex())
 	err := wikidb.Db.C("page").Insert(p)
 	if err != nil {
@@ -252,6 +252,7 @@ func savePagePostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 	}
 
+	p.Article.Title = r.FormValue("title")
 	p.Article.Body = r.FormValue("body")
 	err = p.save(c, r)
 	if err != nil {
@@ -334,26 +335,17 @@ func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	user := User{}
 	err := wikidb.Db.C("user").Find(bson.M{"name": name}).One(&user)
-	if err == mgo.ErrNotFound {
-		fmt.Println("!!! login failed")
-		http.Redirect(w, r, "/login", http.StatusFound)
-		return
-	} else if err != nil {
-		log.Fatalln(err)
+	if err == nil {
+		err = bcrypt.CompareHashAndPassword(user.Password, []byte(password))
+		if err == nil {
+			session.Values["id"] = user.Id.Hex()
+			sessions.Save(r, w)
+			http.Redirect(w, r, "/wiki", http.StatusFound)
+			return
+		}
 	}
 
-	err = bcrypt.CompareHashAndPassword(user.Password, []byte(password))
-	if err != nil {
-		// TODO: login failed
-		fmt.Println("!!! login failed")
-		http.Redirect(w, r, "/login", http.StatusFound)
-		return
-	}
-
-	session.Values["id"] = user.Id.Hex()
-	sessions.Save(r, w)
-
-	http.Redirect(w, r, "/wiki", http.StatusFound)
+	executeWriterFromFile(w, "view/login.html", &pongo2.Context{"error": "Incorrect username or password."})
 }
 
 func createTable(db *sql.DB) (*gorp.DbMap, error) {

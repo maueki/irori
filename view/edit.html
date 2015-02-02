@@ -7,13 +7,14 @@
 {% endblock %}
 
 {% block content %}
-<h1>Editing {{page.Article.Title}}</h1>
 <div id="editor">
-  <form action="/wiki/{{page.Id.Hex()}}" method="POST">
-    <textarea name="body">{{ page.Article.Body|stringformat:"%s" }}</textarea>
-    <div id="output">{{page.Article.Body|markdown|sanitize}}</div>
-    <input type="submit" value="Save">
-  </form>
+	<form action="/wiki/{{page.Id.Hex()}}" method="POST">
+		<input type="text" name="title"
+			class="form-control" value="{{page.Article.Title}}" placeholder="タイトル">
+		<textarea name="body">{{ page.Article.Body|stringformat:"%s" }}</textarea>
+		<div id="output">{{page.Article.Body|markdown|sanitize}}</div>
+		<input type="submit" value="Save">
+	</form>
 </div>
 {% endblock %}
 
