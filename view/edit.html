@@ -7,20 +7,40 @@
 {% endblock %}
 
 {% block content %}
-<div class="container">
-	<div id="editor">
-		<form action="/wiki/{{page.Id.Hex()}}" method="POST">
-			<input type="text" name="title"
-			class="form-control" value="{{page.Article.Title}}" placeholder="タイトル">
-			<textarea name="body">{{ page.Article.Body|stringformat:"%s" }}</textarea>
-			<div id="output">{{page.Article.Body|markdown|sanitize}}</div>
-			{% if isEditor %}
-			<input type="submit" class="btn btn-primary" value="Save">
-			{% else %}
-			<input type="submit" class="btn btn-primary" data-container="body" disabled="disable" value="Save" data-toggle="popover" data-placement="right" data-content="Disable for guest">
-			{% endif %}
-		</form>
-	</div>
+<div id="editor" class="container">
+	<form action="/wiki/{{page.Id.Hex()}}" method="POST">
+		<!-- title editor -->
+		<div class="row">
+			<div class="col-xs-12">
+				<input type="text" name="title" id="title-editor"
+				class="form-control" value="{{page.Article.Title}}" placeholder="タイトル">
+			</div>
+		</div><!-- row -->
+
+		<!-- main editor -->
+		<div class="row">
+			<div class="col-xs-6">
+				<textarea name="body" id="body-editor">{{ page.Article.Body|stringformat:"%s" }}</textarea>
+			</div>
+			<div class="col-xs-6">
+				<!-- preview -->
+				<div id="output">{{page.Article.Body|markdown|sanitize}}</div>
+			</div>
+		</div><!-- row -->
+
+		<!-- action btn -->
+		<div class="row">
+			<div class="col-xs-12">
+				{% if isEditor %}
+				<input type="submit" class="btn btn-primary pull-right" value="Save">
+				{% else %}
+				<input type="submit" class="btn btn-primary pull-right"
+				data-container="body" disabled="disable" value="Save"
+				data-toggle="popover" data-placement="left" data-content="Disable for guest">
+				{% endif %}
+			</div>
+		</div><!-- row -->
+	</form>
 </div>
 {% endblock %}
 
