@@ -178,7 +178,7 @@ func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	user := getUser(c)
 
 	p := &Page{
-		Id: bson.NewObjectId(),
+		Id:      bson.NewObjectId(),
 		Article: Article{Title: "", Body: "", Date: time.Now(), User: UserRef{Id: user.Id, Ref: "user"}}}
 
 	fmt.Println(p.Id.Hex())
@@ -196,17 +196,34 @@ func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 func viewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	pageId := c.URLParams["pageId"]
 
-	p, err := getPageFromDb(c, pageId)
-	if p == nil || err != nil {
+	// get page info
+	page, err := getPageFromDb(c, pageId)
+	if page == nil || err != nil {
 		// FIXME : redirect to top page or "NotFound" page
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
+	// get current login user info
 	user := getUser(c)
 
-	err = executeWriterFromFile(w, "view/view.html",
-		&pongo2.Context{"loginuser": user, "page": p})
+	// get last edited user info
+	wikidb := getWikiDb(c)
+	editeduser, err := getUserById(wikidb.Db, page.Article.User.Id)
+	if err == mgo.ErrNotFound {
+		// TODO : when user is removed?
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	// genarate html
+	pongoCtx := pongo2.Context{
+		"loginuser":  user,
+		"page":       page,
+		"editeduser": editeduser}
+
+	err = executeWriterFromFile(w, "view/view.html", &pongoCtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -471,8 +488,8 @@ func addTestUser(db *mgo.Database) {
 	}
 
 	admin := &User{
-		Name: "admin",
-		Password: []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
+		Name:        "admin",
+		Password:    []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
 		Permissions: map[Permission]bool{ADMIN: true, EDITOR: true},
 	}
 
