@@ -2,40 +2,41 @@
 
 {% block title %} main page {% endblock %}
 
-{% block posthead %}
+{% block posthead_main %}
 <link href="/assets/css/home.css" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
-<div class="home">
-{% if not loginuser.Exist %}
-  <div class="jumbotron">
-    <h1>Go Wiki</h1>
-    <p><a class="btn btn-lg btn-success" href="/signup" role="button">新規登録</a></p>
-  </div>
-{% else %}
-    <div class="jumbotron">
-        <h1>Hello! {{ loginuser.Name }}</h1>
-        <table class="table table-striped table-hover ">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Column heading</th>
-                    <th>Column heading</th>
-                    <th>Column heading</th>
-                </tr>
-            </thead>
-            <tbody>
-            <tr>
-                <td>1</td>
-                <td><a href="/wiki/{{ loginuser.Name }}">{{ loginuser.Name }}</a></td>
-                <td>Column content</td>
-                <td>Column content</td>
-            </tr>
-            </tbody>
-        </table>
-        <p><a class="btn btn-lg btn-success" href="/action/createNewPage" role="button">記事作成</a></p>
-    </div>
-{% endif %}
-</div> <!-- /container -->
+<div class="container">
+	<div class="home">
+		{% if not loginuser.Exist %}
+		<div class="jumbotron">
+			<h1>Go Wiki</h1>
+			<p><a class="btn btn-lg btn-success" href="/signup" role="button">新規登録</a></p>
+		</div>
+		{% else %}
+		<div class="jumbotron">
+			<h1>Hello! {{ loginuser.Name }}</h1>
+			<table class="table table-striped table-hover ">
+				<thead>
+					<tr>
+						<th>#</th>
+						<th>Column heading</th>
+						<th>Column heading</th>
+						<th>Column heading</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>1</td>
+						<td><a href="/wiki/{{ loginuser.Name }}">{{ loginuser.Name }}</a></td>
+						<td>Column content</td>
+						<td>Column content</td>
+					</tr>
+				</tbody>
+			</table>
+			<p><a class="btn btn-lg btn-success" href="/action/createNewPage" role="button">記事作成</a></p>
+		{% endif %}
+	</div> <!-- home -->
+</div> <!-- container -->
 {% endblock %}

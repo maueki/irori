@@ -2,19 +2,21 @@
 
 {% block title %}{{page.Article.Title}}{% endblock %}
 
-{% block posthead %}
+{% block posthead_main %}
 <link href="/assets/css/editor.css" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
-<div id="editor">
-	<form action="/wiki/{{page.Id.Hex()}}" method="POST">
-		<input type="text" name="title"
+<div class="container">
+	<div id="editor">
+		<form action="/wiki/{{page.Id.Hex()}}" method="POST">
+			<input type="text" name="title"
 			class="form-control" value="{{page.Article.Title}}" placeholder="タイトル">
-		<textarea name="body">{{ page.Article.Body|stringformat:"%s" }}</textarea>
-		<div id="output">{{page.Article.Body|markdown|sanitize}}</div>
-		<input type="submit" value="Save">
-	</form>
+			<textarea name="body">{{ page.Article.Body|stringformat:"%s" }}</textarea>
+			<div id="output">{{page.Article.Body|markdown|sanitize}}</div>
+			<input type="submit" value="Save">
+		</form>
+	</div>
 </div>
 {% endblock %}
 
