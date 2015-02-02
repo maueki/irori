@@ -7,7 +7,7 @@ COFFEESRC=$(wildcard $(COFFEEDIR)/*.coffee)
 all: irori coffee
 
 irori: $(GOSRC)
-	go get -d -v ./... && go build -o irori -v .
+	go get -d -v ./... && go build -v .
 
 coffee: $(COFFEESRC)
 	coffee -o $(COFFEEDIR) -c $^
