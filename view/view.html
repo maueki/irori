@@ -1,8 +1,8 @@
 {% extends "navbar.html" %}
 
-{% block title %}{{ page.Title }}{% endblock %}
+{% block title %}{{ page.Article.Title }}{% endblock %}
 
 {% block content %}
-<h1>{{ page.Title }}</h1>
-<div>{{ page.Body|markdown|sanitize }}</div>
+<h1>{{ page.Article.Title }}</h1>
+<div>{{ page.Article.Body|markdown|sanitize }}</div>
 {% endblock %}

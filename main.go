@@ -88,14 +88,13 @@ func decodeFromBlob(data []byte) (string, error) {
 	return string(data), error
 }
 
-/*
-func (p *Page) createHistoryData() (*History, error) {
-	title, err := encodeFromText(p.Title)
+func (a *Article) createHistoryData() (*History, error) {
+	title, err := encodeFromText(a.Title)
 	if err != nil {
 		return nil, err
 	}
 
-	body, err := encodeFromText(p.Body)
+	body, err := encodeFromText(a.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -103,12 +102,10 @@ func (p *Page) createHistoryData() (*History, error) {
 	history := History{}
 	history.Title = title
 	history.Body = body
-	history.ModifiedUserId = p.LastModifiedUserId
-	history.ModifiedDate = p.LastModifiedDate
+	history.User = a.User
 
 	return &history, nil
 }
-*/
 
 func (p *Page) save(c web.C, r *http.Request) error {
 	id, hasid := getUserId(r)
@@ -116,12 +113,19 @@ func (p *Page) save(c web.C, r *http.Request) error {
 		return errors.New("failed to get user id.") // FIXME
 	}
 
+	history, err := p.Article.createHistoryData()
+	if err != nil {
+		return err
+	}
+
 	p.Article.User.Id = bson.ObjectIdHex(id)
 	p.Article.User.Ref = "user"
 	p.Article.Date = time.Now()
 
 	wikidb := getWikiDb(c)
-	return wikidb.Db.C("page").UpdateId(p.Id, p)
+	return wikidb.Db.C("page").UpdateId(p.Id,
+		bson.M{"$set": bson.M{"article": p.Article},
+			"$push": bson.M{"history": history}})
 }
 
 func getPageFromDb(c web.C, pageId string) (*Page, error) {
@@ -184,7 +188,7 @@ func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	id, _ := getUserId(r)
 
 	p := &Page{
-		Id: bson.NewObjectId(),
+		Id:      bson.NewObjectId(),
 		Article: Article{Title: "タイトル未設定", Body: "", Date: time.Now(), User: UserRef{Id: bson.ObjectIdHex(id), Ref: "user"}}}
 	fmt.Println(p.Id.Hex())
 	err := wikidb.Db.C("page").Insert(p)
@@ -273,14 +277,14 @@ func HashPassword(password string) []byte {
 	return hash
 }
 
-/*
 func signupPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	wikidb := getWikiDb(c)
 	name := r.FormValue("username")
 	password := r.FormValue("password")
 
-	user := &User{Name: name, Password: HashPassword(password)}
-	err := wikidb.DbMap.Insert(user)
+	// FIXME: check username already existed
+	user := &User{Id: bson.NewObjectId(), Name: name, Password: HashPassword(password)}
+	err := wikidb.Db.C("user").Insert(user)
 	if err != nil {
 		executeWriterFromFile(w, "view/signup.html", &pongo2.Context{"error": "Incorrect, please try again."})
 		return
@@ -292,7 +296,6 @@ func signupPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, "/wiki", http.StatusFound)
 }
-*/
 
 func loginPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	err := executeWriterFromFile(w, "view/login.html", &pongo2.Context{})
@@ -442,7 +445,7 @@ func addTestUser(db *mgo.Database) {
 	db.C("user").RemoveAll(nil) // FIXME
 
 	user := &User{
-		Name: "test",
+		Name:     "test",
 		Password: []byte("$2a$10$1KbzrHDRoPwZuHxWs1D6lOSLpcCRyPZXJ1Q7sPFbBf03DSc8y8n8K"),
 	}
 
@@ -470,7 +473,7 @@ func main() {
 	m := web.New()
 	m.Get("/signup", signupPageGetHandler)
 	m.Get("/login", loginPageGetHandler)
-	//m.Post("/signup", signupPostHandler)
+	m.Post("/signup", signupPostHandler)
 	m.Post("/login", loginPostHandler)
 	m.Post("/logout", logoutPostHandler)
 	m.Get("/wiki", topPageGetHandler)
