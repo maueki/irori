@@ -1,9 +1,9 @@
 {% extends "navbar.html" %}
 
-{% block title %}{{ page.Title }}{% endblock %}
+{% block title %}{{ page.Article.Title }}{% endblock %}
 
 {% block content %}
-<h1>{{ page.Title }}</h1>
-<a class="btn btn-default btn-sm" href="/wiki/{{ page.Id }}/edit">記事を編集</a>
-<div>{{ page.Body|markdown|sanitize }}</div>
+<h1>{{ page.Article.Title }}</h1>
+<a class="btn btn-default btn-sm" href="/wiki/{{ page.Id.Hex() }}/edit">記事を編集</a>
+<div>{{ page.Article.Body|markdown|sanitize }}</div>
 {% endblock %}
