@@ -188,7 +188,7 @@ func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	id, _ := getUserId(r)
 
 	p := &Page{
-		Id:      bson.NewObjectId(),
+		Id: bson.NewObjectId(),
 		Article: Article{Title: "タイトル未設定", Body: "", Date: time.Now(), User: UserRef{Id: bson.ObjectIdHex(id), Ref: "user"}}}
 	fmt.Println(p.Id.Hex())
 	err := wikidb.Db.C("page").Insert(p)
@@ -282,16 +282,25 @@ func signupPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	name := r.FormValue("username")
 	password := r.FormValue("password")
 
-	// FIXME: check username already existed
-	user := &User{Id: bson.NewObjectId(), Name: name, Password: HashPassword(password)}
-	err := wikidb.Db.C("user").Insert(user)
+	user := &User{Name: name, Password: HashPassword(password)}
+
+	// Register user only if not found.
+	changeinfo, err := wikidb.Db.C("user").Upsert(bson.M{"name": name},
+		bson.M{"$setOnInsert": user})
 	if err != nil {
+		log.Println(err)
+		executeWriterFromFile(w, "view/signup.html", &pongo2.Context{"error": "Incorrect, please try again."})
+		return
+	}
+
+	if changeinfo.UpsertedId == nil {
+		log.Println("user.Name already exists:", name)
 		executeWriterFromFile(w, "view/signup.html", &pongo2.Context{"error": "Incorrect, please try again."})
 		return
 	}
 
 	session, _ := store.Get(r, SESSION_NAME)
-	session.Values["id"] = user.Id.Hex()
+	session.Values["id"] = changeinfo.UpsertedId.(bson.ObjectId).Hex()
 	sessions.Save(r, w)
 
 	http.Redirect(w, r, "/wiki", http.StatusFound)
@@ -445,7 +454,7 @@ func addTestUser(db *mgo.Database) {
 	db.C("user").RemoveAll(nil) // FIXME
 
 	user := &User{
-		Name:     "test",
+		Name: "test",
 		Password: []byte("$2a$10$1KbzrHDRoPwZuHxWs1D6lOSLpcCRyPZXJ1Q7sPFbBf03DSc8y8n8K"),
 	}
 
