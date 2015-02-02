@@ -1,22 +1,18 @@
 package main
 
 import (
-	"database/sql"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/coopernurse/gorp"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/zenazn/goji/web"
 
 	"gopkg.in/mgo.v2"
 )
 
-func testDb(dbmap *gorp.DbMap, mongodb *mgo.Database) func(c *web.C, h http.Handler) http.Handler {
+func testDb(db *mgo.Database) func(c *web.C, h http.Handler) http.Handler {
 	wikidb := &WikiDb{
-		DbMap: dbmap,
-		Db:    mongodb,
+		Db: db,
 	}
 
 	return func(c *web.C, h http.Handler) http.Handler {
@@ -37,21 +33,10 @@ func TestSample(t *testing.T) {
 	defer session.Close()
 
 	session.SetMode(mgo.Monotonic, true)
-	mongodb := session.DB("gowikitest")
-
-	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		t.Fatal("sql.Open failed")
-	}
-	defer db.Close()
-
-	dbmap, err := createTable(db)
-	if err != nil {
-		t.Fatal("CreateTable Failed")
-	}
+	db := session.DB("gowikitest")
 
 	m := web.New()
-	m.Use(testDb(dbmap, mongodb))
+	m.Use(testDb(db))
 	m.Get("/wiki", topPageGetHandler)
 	s := httptest.NewServer(m)
 	defer s.Close()
