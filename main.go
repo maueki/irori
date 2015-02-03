@@ -7,6 +7,7 @@ import (
 	//"github.com/maueki/go_wiki/db"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"code.google.com/p/go.crypto/bcrypt"
@@ -191,7 +192,7 @@ func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	id, _ := getUserId(r)
 
 	p := &Page{
-		Id: bson.NewObjectId(),
+		Id:      bson.NewObjectId(),
 		Article: Article{Title: "", Body: "", Date: time.Now(), User: UserRef{Id: bson.ObjectIdHex(id), Ref: "user"}}}
 	fmt.Println(p.Id.Hex())
 	err := wikidb.Db.C("page").Insert(p)
@@ -450,7 +451,7 @@ func addTestUser(db *mgo.Database) {
 	db.C("user").RemoveAll(nil) // FIXME
 
 	user := &User{
-		Name: "test",
+		Name:     "test",
 		Password: []byte("$2a$10$1KbzrHDRoPwZuHxWs1D6lOSLpcCRyPZXJ1Q7sPFbBf03DSc8y8n8K"),
 	}
 
@@ -463,7 +464,12 @@ func addTestUser(db *mgo.Database) {
 func main() {
 	ReadConfig()
 
-	session, err := mgo.Dial("localhost")
+	url := os.Getenv("MONGODB_URL")
+	if url == "" {
+		url = "localhost/gowiki"
+	}
+
+	session, err := mgo.Dial(url)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -471,7 +477,7 @@ func main() {
 
 	session.SetMode(mgo.Monotonic, true)
 
-	db := session.DB("gowiki")
+	db := session.DB("")
 
 	addTestUser(db)
 
