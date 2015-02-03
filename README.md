@@ -16,7 +16,7 @@ Access to http://localhost:9090/wiki
 
 # Demo Page
 
-https://heroku-go-wiki.herokuapp.com/wiki
+https://irori-demo.herokuapp.com/wiki
 
 # License
 
