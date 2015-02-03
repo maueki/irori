@@ -192,7 +192,7 @@ func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	id, _ := getUserId(r)
 
 	p := &Page{
-		Id:      bson.NewObjectId(),
+		Id: bson.NewObjectId(),
 		Article: Article{Title: "", Body: "", Date: time.Now(), User: UserRef{Id: bson.ObjectIdHex(id), Ref: "user"}}}
 	fmt.Println(p.Id.Hex())
 	err := wikidb.Db.C("page").Insert(p)
@@ -375,9 +375,16 @@ func createTable(db *sql.DB) (*gorp.DbMap, error) {
 
 func topPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	loginuser, _ := getLoginUserInfo(c, w, r)
-	err := executeWriterFromFile(w, "view/main.html", &pongo2.Context{"loginuser": loginuser})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if loginuser.Exist == false {
+		err := executeWriterFromFile(w, "view/prelogin.html", &pongo2.Context{})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	} else {
+		err := executeWriterFromFile(w, "view/main.html", &pongo2.Context{"loginuser": loginuser})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	}
 }
 
@@ -451,7 +458,7 @@ func addTestUser(db *mgo.Database) {
 	db.C("user").RemoveAll(nil) // FIXME
 
 	user := &User{
-		Name:     "test",
+		Name: "test",
 		Password: []byte("$2a$10$1KbzrHDRoPwZuHxWs1D6lOSLpcCRyPZXJ1Q7sPFbBf03DSc8y8n8K"),
 	}
 
