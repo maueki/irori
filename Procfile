@@ -1,1 +1,1 @@
-web: go_wiki
+web: irori

@@ -4,10 +4,10 @@ COFFEEDIR=assets/js
 COFFEESRC=$(wildcard $(COFFEEDIR)/*.coffee)
 
 .PHONY: all coffee test
-all: go_wiki coffee
+all: irori coffee
 
-go_wiki: $(GOSRC)
-	go get -d -v ./... && go build -v .
+irori: $(GOSRC)
+	go get -d -v ./... && go build -o irori -v .
 
 coffee: $(COFFEESRC)
 	coffee -o $(COFFEEDIR) -c $^

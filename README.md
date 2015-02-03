@@ -1,12 +1,15 @@
-[![Stories in Ready](https://badge.waffle.io/maueki/go_wiki.png?label=ready&title=Ready)](https://waffle.io/maueki/go_wiki)
-[![Build Status](https://travis-ci.org/maueki/go_wiki.svg)](https://travis-ci.org/maueki/go_wiki)
+[![Stories in Ready](https://badge.waffle.io/maueki/irori.png?label=ready&title=Ready)](https://waffle.io/maueki/irori)
+[![Build Status](https://travis-ci.org/maueki/irori.svg)](https://travis-ci.org/maueki/irori)
+
+# What's Irori
+
+A simple and small system for managing documents.
 
 # build & start
 
 ```
-$ go get -d -v ./...
-$ go build -v
-$ ./go_wiki -bind :9090
+$ make
+$ ./irori -bind :9090
 ```
 
 Access to http://localhost:9090/wiki
