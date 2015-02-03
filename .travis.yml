@@ -15,7 +15,7 @@ script:
     - make test
 
 go:
-    - tip
+    - 1.4
 
 services:
     - mongodb
