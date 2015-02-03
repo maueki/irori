@@ -6,16 +6,45 @@
 }
 
 #viewpage-title {
+	margin-bottom: 30px;
+}
+
+#viewpage-projecttagspace {
+	height: 25px;
+	margin-top: 5px;
 	margin-bottom: 5px;
 }
 
 #viewpage-tagspace {
-	height: 30px;
+	height: 25px;
+	margin-top: 5px;
+	margin-bottom: 5px;
+}
+
+#viewpage-tag {
+	margin-right: 5px;
+	background-color: #F7F9FE;
+	color: #333;
+}
+
+#viewpage-col-articleinfo1 {
+	padding-left: 0px;
 	margin-top: 10px;
-	margin-bottom: 10px;
+	margin-bottom: 20px;
+}
+
+#viewpage-col-articleinfo2 {
+	padding-top: 3px;
+	padding-left: 0px;
+	margin-top: 10px;
+	margin-bottom: 20px;
 }
 
 #viewpage-editbtn {
-	margin-top: 10px;
-	margin-bottom: 10px;
+	margin-top: 5px;
+	margin-bottom: 5px;
+}
+
+#viewpage-timestamp {
+	margin-bottom: 2px;
 }
