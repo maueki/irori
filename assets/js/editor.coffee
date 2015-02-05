@@ -1,4 +1,7 @@
 $ ->
+  # FIXME
+  setLeavingMessage('You\'re about to throw away this text without posting it.')
+
   timer = null
 
   send_text = () ->
