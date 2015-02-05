@@ -32,3 +32,22 @@ displayAlert = (parentElement, type, text) ->
 
   if parentElement
     parentElement.appendChild(element)
+
+
+@setLeavingMessage = (message) ->
+  isChanged = false
+  $(window).bind 'beforeunload', ->
+    alert('beforeunload')
+    if isChanged
+      return message
+    return
+
+  $('form input, form select, form textarea').each ->
+    this.addEventListener 'input', () ->
+      if !isChanged
+        isChanged = true
+      return
+
+  $('input[type=submit], button[type=submit]').click ->
+    isChanged = false
+    return
