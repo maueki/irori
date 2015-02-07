@@ -26,6 +26,8 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+var ErrUserNotFound = errors.New("user not found")
+
 const SESSION_NAME = "go_wiki_session"
 
 var store = sessions.NewCookieStore([]byte("something-very-secret")) // FIXME
@@ -147,7 +149,7 @@ func executeWriterFromFile(w http.ResponseWriter, path string, context *pongo2.C
 	return tpl.ExecuteWriter(*context, w)
 }
 
-// precond: must user logined
+// precond: must call after needLogin()
 func getUser(c web.C) (*User, bool) {
 	user, ok := c.Env["user"]
 	if !ok {
@@ -291,7 +293,7 @@ func signupPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 
 	session, _ := store.Get(r, SESSION_NAME)
-	session.Values["id"] = changeinfo.UpsertedId.(bson.ObjectId).Hex()
+	session.Values["userid"] = changeinfo.UpsertedId.(bson.ObjectId).Hex()
 	sessions.Save(r, w)
 
 	http.Redirect(w, r, "/wiki", http.StatusFound)
@@ -313,7 +315,7 @@ func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 			HttpOnly: true}
 	}
 
-	delete(session.Values, "id")
+	delete(session.Values, "userid")
 	sessions.Save(r, w)
 
 	wikidb := getWikiDb(c)
@@ -325,7 +327,7 @@ func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		err = bcrypt.CompareHashAndPassword(user.Password, []byte(password))
 		if err == nil {
-			session.Values["id"] = user.Id.Hex()
+			session.Values["userid"] = user.Id.Hex()
 			sessions.Save(r, w)
 			http.Redirect(w, r, "/wiki", http.StatusSeeOther)
 			return
@@ -361,10 +363,14 @@ func createTable(db *sql.DB) (*gorp.DbMap, error) {
 }
 
 func topPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	user, ok := getUser(c)
-	if !ok {
-		err := executeWriterFromFile(w, "view/prelogin.html", &pongo2.Context{})
-		if err != nil {
+	user, err := getUserFromDB(c, r)
+	if err != nil {
+		if err == ErrUserNotFound {
+			err := executeWriterFromFile(w, "view/prelogin.html", &pongo2.Context{})
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+		} else {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	} else {
@@ -381,7 +387,7 @@ func rootHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 func logoutPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	session, _ := store.Get(r, SESSION_NAME)
-	delete(session.Values, "id")
+	delete(session.Values, "userid")
 	sessions.Save(r, w)
 
 	http.Redirect(w, r, "/wiki", http.StatusFound)
@@ -415,22 +421,27 @@ func includeDb(db *mgo.Database) func(c *web.C, h http.Handler) http.Handler {
 	}
 }
 
+func getUserFromDB(c web.C, r *http.Request) (*User, error) {
+	session, _ := store.Get(r, SESSION_NAME)
+	id, ok := session.Values["userid"]
+	if !ok {
+		return nil, ErrUserNotFound
+	}
+
+	wikidb := getWikiDb(c)
+	user, err := getUserById(wikidb.Db, bson.ObjectIdHex(id.(string)))
+	return user, err
+}
+
 func needLogin(c *web.C, h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		session, _ := store.Get(r, SESSION_NAME)
-		id, ok := session.Values["id"]
-		if !ok {
-			http.Redirect(w, r, "/login", http.StatusFound)
-			return
-		}
+		user, err := getUserFromDB(*c, r)
 
-		wikidb := getWikiDb(*c)
-		user, err := getUserById(wikidb.Db, bson.ObjectIdHex(id.(string)))
-		if err == mgo.ErrNotFound {
-			delete(session.Values, "id")
+		if err == ErrUserNotFound {
+			session, _ := store.Get(r, SESSION_NAME)
+			delete(session.Values, "userid")
 			sessions.Save(r, w)
 
-			fmt.Printf("need login\n")
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		} else if err != nil {
