@@ -163,6 +163,7 @@ func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	p := &Page{
 		Id: bson.NewObjectId(),
 		Article: Article{Title: "", Body: "", Date: time.Now(), User: UserRef{Id: id, Ref: "user"}}}
+
 	fmt.Println(p.Id.Hex())
 	err := wikidb.Db.C("page").Insert(p)
 	if err != nil {
@@ -319,11 +320,12 @@ func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			session.Values["id"] = user.Id.Hex()
 			sessions.Save(r, w)
-			http.Redirect(w, r, "/wiki", http.StatusFound)
+			http.Redirect(w, r, "/wiki", http.StatusSeeOther)
 			return
 		}
 	}
 
+	w.WriteHeader(http.StatusUnauthorized)
 	executeWriterFromFile(w, "view/login.html", &pongo2.Context{"error": "Incorrect username or password."})
 }
 
@@ -367,7 +369,7 @@ func topPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func rootHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/wiki", http.StatusFound)
+	http.Redirect(w, r, "/wiki", http.StatusMovedPermanently)
 }
 
 func logoutPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -412,6 +414,7 @@ func needLogin(c *web.C, h http.Handler) http.Handler {
 		id, ok := session.Values["id"]
 		if !ok {
 			http.Redirect(w, r, "/login", http.StatusFound)
+			return
 		}
 
 		wikidb := getWikiDb(*c)
@@ -422,8 +425,10 @@ func needLogin(c *web.C, h http.Handler) http.Handler {
 
 			fmt.Printf("need login\n")
 			http.Redirect(w, r, "/login", http.StatusFound)
+			return
 		} else if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		} else {
 			c.Env["user"] = user
 		}
@@ -447,24 +452,7 @@ func addTestUser(db *mgo.Database) {
 	}
 }
 
-func main() {
-	ReadConfig()
-
-	url := os.Getenv("MONGODB_URL")
-	if url == "" {
-		url = "localhost/gowiki"
-	}
-
-	session, err := mgo.Dial(url)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer session.Close()
-
-	session.SetMode(mgo.Monotonic, true)
-
-	db := session.DB("")
-
+func setRoute(db *mgo.Database) {
 	addTestUser(db)
 
 	m := web.New()
@@ -501,5 +489,27 @@ func main() {
 	goji.Handle("/markdown", mdMux)
 	goji.Handle("/action/*", loginUserActionMux)
 	goji.Handle("/*", m)
+}
+
+func main() {
+	ReadConfig()
+
+	url := os.Getenv("MONGODB_URL")
+	if url == "" {
+		url = "localhost/gowiki"
+	}
+
+	session, err := mgo.Dial(url)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer session.Close()
+
+	session.SetMode(mgo.Monotonic, true)
+
+	db := session.DB("")
+
+	setRoute(db)
+
 	goji.Serve()
 }
