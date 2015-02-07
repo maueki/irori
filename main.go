@@ -95,19 +95,17 @@ func (a *Article) createHistoryData() (*History, error) {
 }
 
 func (p *Page) save(c web.C, r *http.Request) error {
-	user, ok := c.Env["user"]
+	user, ok := getUser(c)
 	if !ok {
 		return errors.New("failed to get user id.") // FIXME
 	}
-
-	id := user.(*User).Id
 
 	history, err := p.Article.createHistoryData()
 	if err != nil {
 		return err
 	}
 
-	p.Article.User.Id = id
+	p.Article.User.Id = user.Id
 	p.Article.User.Ref = "user"
 	p.Article.Date = time.Now()
 
@@ -149,20 +147,29 @@ func executeWriterFromFile(w http.ResponseWriter, path string, context *pongo2.C
 	return tpl.ExecuteWriter(*context, w)
 }
 
+// precond: must user logined
+func getUser(c web.C) (*User, bool) {
+	user, ok := c.Env["user"]
+	if !ok {
+		return nil, false
+	}
+
+	u, ok := user.(*User)
+	return u, ok
+}
+
 func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	wikidb := getWikiDb(c)
 
-	user, ok := c.Env["user"]
+	user, ok := getUser(c)
 	if !ok {
 		http.Error(w, "user not logined", http.StatusInternalServerError)
 		return
 	}
 
-	id := user.(*User).Id
-
 	p := &Page{
 		Id: bson.NewObjectId(),
-		Article: Article{Title: "", Body: "", Date: time.Now(), User: UserRef{Id: id, Ref: "user"}}}
+		Article: Article{Title: "", Body: "", Date: time.Now(), User: UserRef{Id: user.Id, Ref: "user"}}}
 
 	fmt.Println(p.Id.Hex())
 	err := wikidb.Db.C("page").Insert(p)
@@ -186,14 +193,14 @@ func viewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	loginuser, ok := c.Env["user"]
+	user, ok := getUser(c)
 	if !ok {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	err = executeWriterFromFile(w, "view/view.html",
-		&pongo2.Context{"loginuser": loginuser, "page": p})
+		&pongo2.Context{"loginuser": user, "page": p})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -208,14 +215,14 @@ func editPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 	}
 
-	loginuser, ok := c.Env["user"]
+	user, ok := getUser(c)
 	if !ok {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	err = executeWriterFromFile(w, "view/edit.html",
-		&pongo2.Context{"loginuser": loginuser, "page": p})
+		&pongo2.Context{"loginuser": user, "page": p})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -354,14 +361,14 @@ func createTable(db *sql.DB) (*gorp.DbMap, error) {
 }
 
 func topPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	loginuser, ok := c.Env["user"]
+	user, ok := getUser(c)
 	if !ok {
 		err := executeWriterFromFile(w, "view/prelogin.html", &pongo2.Context{})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	} else {
-		err := executeWriterFromFile(w, "view/main.html", &pongo2.Context{"loginuser": loginuser.(*User)})
+		err := executeWriterFromFile(w, "view/main.html", &pongo2.Context{"loginuser": user})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
