@@ -65,21 +65,6 @@ type WikiDb struct {
 	Db *mgo.Database
 }
 
-type LoginUser struct {
-	Exist bool
-	Name  string
-}
-
-func getUserId(r *http.Request) (string, bool) {
-	session, _ := store.Get(r, SESSION_NAME)
-
-	if id, ok := session.Values["id"]; ok {
-		return id.(string), true
-	} else {
-		return "", false
-	}
-}
-
 func encodeFromText(text string) ([]byte, error) {
 	return lz4.Encode(nil, []byte(text))
 }
@@ -110,17 +95,19 @@ func (a *Article) createHistoryData() (*History, error) {
 }
 
 func (p *Page) save(c web.C, r *http.Request) error {
-	id, hasid := getUserId(r)
-	if !hasid {
+	user, ok := c.Env["user"]
+	if !ok {
 		return errors.New("failed to get user id.") // FIXME
 	}
+
+	id := user.(*User).Id
 
 	history, err := p.Article.createHistoryData()
 	if err != nil {
 		return err
 	}
 
-	p.Article.User.Id = bson.ObjectIdHex(id)
+	p.Article.User.Id = id
 	p.Article.User.Ref = "user"
 	p.Article.Date = time.Now()
 
@@ -157,30 +144,6 @@ func getUserById(db *mgo.Database, id bson.ObjectId) (*User, error) {
 	return &user, err
 }
 
-func getLoginUserInfo(c web.C, w http.ResponseWriter, r *http.Request) (*LoginUser, error) {
-	// check current user is success to login or not
-	loginuser := LoginUser{false, ""}
-
-	session, _ := store.Get(r, SESSION_NAME)
-	id, ok := session.Values["id"]
-	if ok {
-		wikidb := getWikiDb(c)
-		user, err := getUserById(wikidb.Db, bson.ObjectIdHex(id.(string)))
-		if err == mgo.ErrNotFound {
-			delete(session.Values, "id")
-			sessions.Save(r, w)
-			fmt.Printf("not login\n")
-		} else if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		} else {
-			loginuser.Exist = true
-			loginuser.Name = user.Name
-		}
-	}
-
-	return &loginuser, nil
-}
-
 func executeWriterFromFile(w http.ResponseWriter, path string, context *pongo2.Context) error {
 	tpl := pongo2.Must(pongo2.FromFile(path))
 	return tpl.ExecuteWriter(*context, w)
@@ -189,11 +152,18 @@ func executeWriterFromFile(w http.ResponseWriter, path string, context *pongo2.C
 func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	wikidb := getWikiDb(c)
 
-	id, _ := getUserId(r)
+	user, ok := c.Env["user"]
+	if !ok {
+		http.Error(w, "user not logined", http.StatusInternalServerError)
+		return
+	}
+
+	id := user.(*User).Id
 
 	p := &Page{
-		Id:      bson.NewObjectId(),
-		Article: Article{Title: "", Body: "", Date: time.Now(), User: UserRef{Id: bson.ObjectIdHex(id), Ref: "user"}}}
+		Id: bson.NewObjectId(),
+		Article: Article{Title: "", Body: "", Date: time.Now(), User: UserRef{Id: id, Ref: "user"}}}
+
 	fmt.Println(p.Id.Hex())
 	err := wikidb.Db.C("page").Insert(p)
 	if err != nil {
@@ -213,9 +183,14 @@ func viewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	if p == nil || err != nil {
 		// FIXME : redirect to top page or "NotFound" page
 		http.Error(w, err.Error(), http.StatusNotFound)
+		return
 	}
 
-	loginuser, _ := getLoginUserInfo(c, w, r)
+	loginuser, ok := c.Env["user"]
+	if !ok {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	err = executeWriterFromFile(w, "view/view.html",
 		&pongo2.Context{"loginuser": loginuser, "page": p})
@@ -233,7 +208,11 @@ func editPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 	}
 
-	loginuser, _ := getLoginUserInfo(c, w, r)
+	loginuser, ok := c.Env["user"]
+	if !ok {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	err = executeWriterFromFile(w, "view/edit.html",
 		&pongo2.Context{"loginuser": loginuser, "page": p})
@@ -375,14 +354,14 @@ func createTable(db *sql.DB) (*gorp.DbMap, error) {
 }
 
 func topPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	loginuser, _ := getLoginUserInfo(c, w, r)
-	if loginuser.Exist == false {
+	loginuser, ok := c.Env["user"]
+	if !ok {
 		err := executeWriterFromFile(w, "view/prelogin.html", &pongo2.Context{})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	} else {
-		err := executeWriterFromFile(w, "view/main.html", &pongo2.Context{"loginuser": loginuser})
+		err := executeWriterFromFile(w, "view/main.html", &pongo2.Context{"loginuser": loginuser.(*User)})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -434,13 +413,12 @@ func needLogin(c *web.C, h http.Handler) http.Handler {
 		session, _ := store.Get(r, SESSION_NAME)
 		id, ok := session.Values["id"]
 		if !ok {
-			fmt.Printf("need login\n")
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
 
 		wikidb := getWikiDb(*c)
-		_, err := getUserById(wikidb.Db, bson.ObjectIdHex(id.(string)))
+		user, err := getUserById(wikidb.Db, bson.ObjectIdHex(id.(string)))
 		if err == mgo.ErrNotFound {
 			delete(session.Values, "id")
 			sessions.Save(r, w)
@@ -451,6 +429,8 @@ func needLogin(c *web.C, h http.Handler) http.Handler {
 		} else if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
+		} else {
+			c.Env["user"] = user
 		}
 
 		h.ServeHTTP(w, r)
@@ -462,7 +442,7 @@ func addTestUser(db *mgo.Database) {
 	db.C("user").RemoveAll(nil) // FIXME
 
 	user := &User{
-		Name:     "test",
+		Name: "test",
 		Password: []byte("$2a$10$1KbzrHDRoPwZuHxWs1D6lOSLpcCRyPZXJ1Q7sPFbBf03DSc8y8n8K"),
 	}
 
