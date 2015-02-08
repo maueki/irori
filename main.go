@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	//"github.com/maueki/go_wiki/db"
@@ -12,7 +11,6 @@ import (
 
 	"code.google.com/p/go.crypto/bcrypt"
 
-	"github.com/coopernurse/gorp"
 	"github.com/flosch/pongo2"
 	_ "github.com/flosch/pongo2-addons"
 	_ "github.com/mattn/go-sqlite3"
@@ -336,30 +334,6 @@ func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusUnauthorized)
 	executeWriterFromFile(w, "view/login.html", &pongo2.Context{"error": "Incorrect username or password."})
-}
-
-func createTable(db *sql.DB) (*gorp.DbMap, error) {
-	dbmap := &gorp.DbMap{Db: db, Dialect: gorp.SqliteDialect{}}
-	pageTable := dbmap.AddTableWithName(Page{}, "page").SetKeys(true, "Id")
-	pageTable.ColMap("Title").Rename("title")
-	pageTable.ColMap("Body").Rename("body")
-	pageTable.ColMap("LastModifiedUserId").Rename("lastuser")
-	pageTable.ColMap("LastModifiedDate").Rename("lastdate")
-
-	historyTable := dbmap.AddTableWithName(History{}, "history").SetKeys(true, "Id")
-	historyTable.ColMap("PageId").Rename("pageid")
-	historyTable.ColMap("Title").Rename("title")
-	historyTable.ColMap("Body").Rename("body")
-	historyTable.ColMap("ModifiedUserId").Rename("user")
-	historyTable.ColMap("ModifiedDate").Rename("date")
-
-	dbmap.DropTables()
-	err := dbmap.CreateTables()
-	if err != nil {
-		return nil, err
-	}
-
-	return dbmap, err
 }
 
 func topPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
