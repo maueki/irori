@@ -404,6 +404,12 @@ func getUserFromDB(c web.C, r *http.Request) (*User, error) {
 
 	wikidb := getWikiDb(c)
 	user, err := getUserById(wikidb.Db, bson.ObjectIdHex(id.(string)))
+	if err == mgo.ErrNotFound {
+		return nil, ErrUserNotFound
+	} else if err != nil {
+		return nil, err
+	}
+
 	return user, err
 }
 
