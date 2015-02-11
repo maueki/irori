@@ -495,7 +495,6 @@ func setRoute(db *mgo.Database) {
 
 	loginUserActionMux := web.New()
 	loginUserActionMux.Use(needLogin)
-	loginUserActionMux.Use(includeDb(db))
 	loginUserActionMux.Get("/action/createNewPage", createNewPageGetHandler)
 
 	adminMux := web.New()
@@ -507,7 +506,6 @@ func setRoute(db *mgo.Database) {
 	// Mux : create new page or show a page created already
 	pageMux := web.New()
 	pageMux.Use(needLogin)
-	pageMux.Use(includeDb(db))
 	pageMux.Get("/wiki/:pageId", viewPageGetHandler)
 	pageMux.Get("/wiki/:pageId/edit", editPageGetHandler)
 	pageMux.Post("/wiki/:pageId", savePagePostHandler)
@@ -515,7 +513,6 @@ func setRoute(db *mgo.Database) {
 	// Mux : convert Markdown to HTML which is send by Ajax
 	mdMux := web.New()
 	mdMux.Use(needLogin)
-	mdMux.Use(includeDb(db))
 	mdMux.Post("/markdown", markdownPostHandler)
 
 	goji.Use(includeDb(db))
