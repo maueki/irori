@@ -146,6 +146,12 @@ func getPageFromDb(c web.C, pageId string) (*Page, error) {
 	return &p, nil
 }
 
+func getUserById(db *mgo.Database, id bson.ObjectId) (*User, error) {
+	user := User{}
+	err := db.C("user").FindId(id).One(&user)
+	return &user, err
+}
+
 func executeWriterFromFile(w http.ResponseWriter, path string, context *pongo2.Context) error {
 	tpl := pongo2.Must(pongo2.FromFile(path))
 	return tpl.ExecuteWriter(*context, w)
@@ -172,7 +178,7 @@ func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	user := getUser(c)
 
 	p := &Page{
-		Id:      bson.NewObjectId(),
+		Id: bson.NewObjectId(),
 		Article: Article{Title: "", Body: "", Date: time.Now(), User: UserRef{Id: user.Id, Ref: "user"}}}
 
 	fmt.Println(p.Id.Hex())
@@ -420,9 +426,7 @@ func getUserIfLoggedin(c web.C, r *http.Request) (*User, error) {
 	}
 
 	wikidb := getWikiDb(c)
-
-	user := &User{}
-	err := wikidb.Db.C("user").FindId(bson.ObjectIdHex(id.(string))).One(user)
+	user, err := getUserById(wikidb.Db, bson.ObjectIdHex(id.(string)))
 	if err == mgo.ErrNotFound {
 		return nil, ErrUserNotFound
 	} else if err != nil {
@@ -484,8 +488,8 @@ func addTestUser(db *mgo.Database) {
 	}
 
 	admin := &User{
-		Name:        "admin",
-		Password:    []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
+		Name: "admin",
+		Password: []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
 		Permissions: map[Permission]bool{ADMIN: true, EDITOR: true},
 	}
 
