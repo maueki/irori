@@ -55,10 +55,23 @@ type History struct {
 	Date  time.Time
 }
 
+type Permission string
+
+const (
+	ADMIN  Permission = "admin"
+	EDITOR Permission = "editor"
+)
+
 type User struct {
-	Id       bson.ObjectId `bson:"_id,omitempty"`
-	Name     string
-	Password []byte
+	Id          bson.ObjectId `bson:"_id,omitempty"`
+	Name        string
+	Password    []byte
+	Permissions map[Permission]bool
+}
+
+func (u *User) HasPermission(perm Permission) bool {
+	b, ok := u.Permissions[perm]
+	return ok && b
 }
 
 type WikiDb struct {
@@ -95,10 +108,7 @@ func (a *Article) createHistoryData() (*History, error) {
 }
 
 func (p *Page) save(c web.C, r *http.Request) error {
-	user, ok := getUser(c)
-	if !ok {
-		return errors.New("failed to get user id.") // FIXME
-	}
+	user := getUser(c)
 
 	history, err := p.Article.createHistoryData()
 	if err != nil {
@@ -148,24 +158,24 @@ func executeWriterFromFile(w http.ResponseWriter, path string, context *pongo2.C
 }
 
 // precond: must call after needLogin()
-func getUser(c web.C) (*User, bool) {
+func getUser(c web.C) *User {
 	user, ok := c.Env["user"]
 	if !ok {
-		return nil, false
+		log.Fatalln("user not found")
 	}
 
 	u, ok := user.(*User)
-	return u, ok
+	if !ok {
+		log.Fatalln("invalid user")
+	}
+
+	return u
 }
 
 func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	wikidb := getWikiDb(c)
 
-	user, ok := getUser(c)
-	if !ok {
-		http.Error(w, "user not logined", http.StatusInternalServerError)
-		return
-	}
+	user := getUser(c)
 
 	p := &Page{
 		Id: bson.NewObjectId(),
@@ -193,11 +203,7 @@ func viewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, ok := getUser(c)
-	if !ok {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	user := getUser(c)
 
 	err = executeWriterFromFile(w, "view/view.html",
 		&pongo2.Context{"loginuser": user, "page": p})
@@ -215,11 +221,7 @@ func editPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 	}
 
-	user, ok := getUser(c)
-	if !ok {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	user := getUser(c)
 
 	err = executeWriterFromFile(w, "view/edit.html",
 		&pongo2.Context{"loginuser": user, "page": p})
@@ -229,9 +231,13 @@ func editPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func savePagePostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	pageId := c.URLParams["pageId"]
+	user := getUser(c)
+	if !user.HasPermission(EDITOR) {
+		http.Error(w, "You are not editor", http.StatusMethodNotAllowed)
+		return
+	}
 
-	fmt.Println("pageid:", pageId)
+	pageId := c.URLParams["pageId"]
 
 	p, err := getPageFromDb(c, pageId)
 	if err != nil {
@@ -252,13 +258,6 @@ func savePagePostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 func getWikiDb(c web.C) *WikiDb { return c.Env["wikidb"].(*WikiDb) }
 
-func signupPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	err := executeWriterFromFile(w, "view/signup.html", &pongo2.Context{})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
 func HashPassword(password string) []byte {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -266,35 +265,6 @@ func HashPassword(password string) []byte {
 		panic(err)
 	}
 	return hash
-}
-
-func signupPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	wikidb := getWikiDb(c)
-	name := r.FormValue("username")
-	password := r.FormValue("password")
-
-	user := &User{Name: name, Password: HashPassword(password)}
-
-	// Register user only if not found.
-	changeinfo, err := wikidb.Db.C("user").Upsert(bson.M{"name": name},
-		bson.M{"$setOnInsert": user})
-	if err != nil {
-		log.Println(err)
-		executeWriterFromFile(w, "view/signup.html", &pongo2.Context{"error": "Incorrect, please try again."})
-		return
-	}
-
-	if changeinfo.UpsertedId == nil {
-		log.Println("user.Name already exists:", name)
-		executeWriterFromFile(w, "view/signup.html", &pongo2.Context{"error": "Incorrect, please try again."})
-		return
-	}
-
-	session, _ := store.Get(r, SESSION_NAME)
-	session.Values["userid"] = changeinfo.UpsertedId.(bson.ObjectId).Hex()
-	sessions.Save(r, w)
-
-	http.Redirect(w, r, "/wiki", http.StatusFound)
 }
 
 func loginPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -381,6 +351,42 @@ func markdownPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func addUserGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	err := executeWriterFromFile(w, "view/adduser.html", &pongo2.Context{})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func addUserPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	wikidb := getWikiDb(c)
+	name := r.FormValue("username")
+	password := r.FormValue("password")
+
+	user := &User{
+		Name:        name,
+		Password:    HashPassword(password),
+		Permissions: map[Permission]bool{EDITOR: true},
+	}
+
+	// Register user only if not found.
+	changeinfo, err := wikidb.Db.C("user").Upsert(bson.M{"name": name},
+		bson.M{"$setOnInsert": user})
+	if err != nil {
+		log.Println(err)
+		executeWriterFromFile(w, "view/adduser.html", &pongo2.Context{"error": "Incorrect, please try again."})
+		return
+	}
+
+	if changeinfo.UpsertedId == nil {
+		log.Println("user.Name already exists:", name)
+		executeWriterFromFile(w, "view/adduser.html", &pongo2.Context{"error": "Incorrect, please try again."})
+		return
+	}
+
+	http.Redirect(w, r, "/wiki", http.StatusFound)
+}
+
 func includeDb(db *mgo.Database) func(c *web.C, h http.Handler) http.Handler {
 	wikidb := &WikiDb{
 		Db: db,
@@ -436,27 +442,52 @@ func needLogin(c *web.C, h http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
+func needAdmin(c *web.C, h http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		user := getUser(*c)
+
+		if !user.HasPermission(ADMIN) {
+			http.Error(w, "You are not admin", http.StatusMethodNotAllowed)
+			return
+		}
+
+		h.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(fn)
+}
+
 func addTestUser(db *mgo.Database) {
 	db.C("user").RemoveAll(nil) // FIXME
 
+	guestHash, _ := bcrypt.GenerateFromPassword([]byte("guest"), bcrypt.DefaultCost)
 	user := &User{
-		Name: "test",
-		Password: []byte("$2a$10$1KbzrHDRoPwZuHxWs1D6lOSLpcCRyPZXJ1Q7sPFbBf03DSc8y8n8K"),
+		Name:     "guest",
+		Password: guestHash,
 	}
 
 	err := db.C("user").Insert(user)
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	admin := &User{
+		Name: "admin",
+		Password: []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
+		Permissions: map[Permission]bool{ADMIN: true, EDITOR: true},
+	}
+
+	err = db.C("user").Insert(admin)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 }
 
 func setRoute(db *mgo.Database) {
 	addTestUser(db)
 
 	m := web.New()
-	m.Get("/signup", signupPageGetHandler)
 	m.Get("/login", loginPageGetHandler)
-	m.Post("/signup", signupPostHandler)
 	m.Post("/login", loginPostHandler)
 	m.Post("/logout", logoutPostHandler)
 	m.Get("/wiki", topPageGetHandler)
@@ -466,6 +497,12 @@ func setRoute(db *mgo.Database) {
 	loginUserActionMux.Use(needLogin)
 	loginUserActionMux.Use(includeDb(db))
 	loginUserActionMux.Get("/action/createNewPage", createNewPageGetHandler)
+
+	adminMux := web.New()
+	adminMux.Use(needLogin)
+	adminMux.Use(needAdmin)
+	adminMux.Get("/admin/adduser", addUserGetHandler)
+	adminMux.Post("/admin/adduser", addUserPostHandler)
 
 	// Mux : create new page or show a page created already
 	pageMux := web.New()
@@ -486,6 +523,7 @@ func setRoute(db *mgo.Database) {
 	goji.Handle("/wiki/*", pageMux)
 	goji.Handle("/markdown", mdMux)
 	goji.Handle("/action/*", loginUserActionMux)
+	goji.Handle("/admin/*", adminMux)
 	goji.Handle("/*", m)
 }
 
@@ -494,7 +532,7 @@ func main() {
 
 	url := os.Getenv("MONGODB_URL")
 	if url == "" {
-		url = "localhost/gowiki"
+		url = "localhost/irori"
 	}
 
 	session, err := mgo.Dial(url)
