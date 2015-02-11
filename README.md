@@ -11,6 +11,7 @@ A simple and small system for managing documents.
 # Requirements
 
 * MongoDB
+* coffee-script
 
 # build & start
 
