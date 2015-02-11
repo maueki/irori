@@ -9,23 +9,24 @@ import (
 	"testing"
 
 	"github.com/zenazn/goji"
-	"github.com/zenazn/goji/web"
+	//"github.com/zenazn/goji/web"
 
 	"gopkg.in/mgo.v2"
+
+	"code.google.com/p/go.crypto/bcrypt"
 )
 
-func testDb(db *mgo.Database) func(c *web.C, h http.Handler) http.Handler {
-	wikidb := &WikiDb{
-		Db: db,
+func createUser(t *testing.T, db *mgo.Database) {
+	hash, _ := bcrypt.GenerateFromPassword([]byte("test"), bcrypt.DefaultCost)
+	user := &User{
+		Name:     "test",
+		Password: hash,
+		Permissions: map[Permission]bool { EDITOR: true},
 	}
 
-	return func(c *web.C, h http.Handler) http.Handler {
-		fn := func(w http.ResponseWriter, r *http.Request) {
-			c.Env = map[interface{}]interface{}{"wikidb": wikidb}
-			//c.Env["wikidb"] = wikidb
-			h.ServeHTTP(w, r)
-		}
-		return http.HandlerFunc(fn)
+	err := db.C("user").Insert(user)
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -42,6 +43,8 @@ func TestTransition(t *testing.T) {
 	db.DropDatabase()
 
 	setRoute(db)
+
+	createUser(t, db)
 
 	s := httptest.NewServer(goji.DefaultMux)
 	res, err := http.Get(s.URL + "/wiki")
@@ -64,11 +67,6 @@ func TestTransition(t *testing.T) {
 
 	if res.Request.URL.String() != s.URL+"/wiki" {
 		t.Error("GET / unexpected redirect URL: ", res.Request.URL.String())
-	}
-
-	res, err = client.Get(s.URL + "/signup")
-	if res.StatusCode != http.StatusOK {
-		t.Error("POST /signup unexpected status code", res.StatusCode)
 	}
 
 	res, err = client.Get(s.URL + "/login")
