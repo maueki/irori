@@ -224,7 +224,7 @@ func editPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	user := getUser(c)
 
 	err = executeWriterFromFile(w, "view/edit.html",
-		&pongo2.Context{"loginuser": user, "page": p})
+		&pongo2.Context{"loginuser": user, "page": p, "isEditor": user.HasPermission(EDITOR)})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
