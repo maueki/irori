@@ -301,7 +301,7 @@ func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func topPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	user, err := getUserFromDB(c, r)
+	user, err := getUserIfLoggedin(c, r)
 	if err != nil {
 		if err == ErrUserNotFound {
 			err := executeWriterFromFile(w, "view/prelogin.html", &pongo2.Context{})
@@ -395,7 +395,7 @@ func includeDb(db *mgo.Database) func(c *web.C, h http.Handler) http.Handler {
 	}
 }
 
-func getUserFromDB(c web.C, r *http.Request) (*User, error) {
+func getUserIfLoggedin(c web.C, r *http.Request) (*User, error) {
 	session, _ := store.Get(r, SESSION_NAME)
 	id, ok := session.Values["userid"]
 	if !ok {
@@ -417,7 +417,7 @@ func getUserFromDB(c web.C, r *http.Request) (*User, error) {
 
 func needLogin(c *web.C, h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		user, err := getUserFromDB(*c, r)
+		user, err := getUserIfLoggedin(*c, r)
 
 		if err == ErrUserNotFound {
 			session, _ := store.Get(r, SESSION_NAME)
