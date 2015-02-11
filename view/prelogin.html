@@ -7,7 +7,17 @@
 {% endblock %}
 
 {% block body %}
-	<i class="icon-irori fa-6"></i>
+	<i class="icon-irori"></i>
 	<h1>Irori</h1>
-	<p><a class="btn btn-lg btn-success" href="/login" role="button">ログイン</a></p>
+	<div class="container">
+	  <form class="form-login" accept-charset="ascii" action="/login" method="POST">
+	    <div class="form-login-heading" data-alert-type="danger" data-alert-value='{{ error }}'> </div>
+	    <label for="login_field" class="sr-only">Username</label>
+	    <input autocorrect="off" name="username" id="login_field" type="text" class="form-control" placeholder="Username" required autofocus>
+	    <label for="password" class="sr-only">Password</label>
+	    <input name="password" id="password" type="password" class="form-control" placeholder="Password"  required>
+	    <p class=".small">guest:guest for guest login</p>
+	    <input class="btn btn-lg btn-default btn-block" type="submit" value="Login">
+	  </form>
+	</div>
 {% endblock %}
