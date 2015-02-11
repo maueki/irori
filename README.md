@@ -1,3 +1,6 @@
+Irori
+======
+
 [![Stories in Ready](https://badge.waffle.io/maueki/irori.png?label=ready&title=Ready)](https://waffle.io/maueki/irori)
 [![Build Status](https://travis-ci.org/maueki/irori.svg)](https://travis-ci.org/maueki/irori)
 
@@ -7,7 +10,7 @@ A simple and small system for managing documents.
 
 # Requirements
 
-MongoDB
+* MongoDB
 
 # build & start
 
@@ -25,11 +28,3 @@ https://irori-demo.herokuapp.com/wiki
 # License
 
 MIT License
-
-# link
-
-https://goji.io/
-
-https://github.com/coopernurse/gorp
-
-http://www.gorillatoolkit.org/pkg/sessions
