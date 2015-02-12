@@ -3,23 +3,18 @@ package main
 import (
 	"errors"
 	"fmt"
-	//"github.com/maueki/go_wiki/db"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
 	"code.google.com/p/go.crypto/bcrypt"
-
+	"github.com/bkaradzic/go-lz4"
 	"github.com/flosch/pongo2"
 	_ "github.com/flosch/pongo2-addons"
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/gorilla/sessions"
 	"github.com/zenazn/goji"
 	"github.com/zenazn/goji/web"
-
-	"github.com/bkaradzic/go-lz4"
-	"github.com/gorilla/sessions"
-
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -108,7 +103,7 @@ func (a *Article) createHistoryData() (*History, error) {
 }
 
 func (p *Page) save(c web.C, r *http.Request) error {
-	user := getUser(c)
+	user := getSessionUser(c)
 
 	history, err := p.Article.createHistoryData()
 	if err != nil {
@@ -158,7 +153,7 @@ func executeWriterFromFile(w http.ResponseWriter, path string, context *pongo2.C
 }
 
 // precond: must call after needLogin()
-func getUser(c web.C) *User {
+func getSessionUser(c web.C) *User {
 	user, ok := c.Env["user"]
 	if !ok {
 		log.Fatalln("user not found")
@@ -175,10 +170,10 @@ func getUser(c web.C) *User {
 func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	wikidb := getWikiDb(c)
 
-	user := getUser(c)
+	user := getSessionUser(c)
 
 	p := &Page{
-		Id: bson.NewObjectId(),
+		Id:      bson.NewObjectId(),
 		Article: Article{Title: "", Body: "", Date: time.Now(), User: UserRef{Id: user.Id, Ref: "user"}}}
 
 	fmt.Println(p.Id.Hex())
@@ -205,7 +200,7 @@ func viewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get current login user info
-	user := getUser(c)
+	user := getSessionUser(c)
 
 	// get last edited user info
 	wikidb := getWikiDb(c)
@@ -238,7 +233,7 @@ func editPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 	}
 
-	user := getUser(c)
+	user := getSessionUser(c)
 
 	err = executeWriterFromFile(w, "view/edit.html",
 		&pongo2.Context{"loginuser": user, "page": p, "isEditor": user.HasPermission(EDITOR)})
@@ -248,7 +243,7 @@ func editPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func savePagePostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	user := getUser(c)
+	user := getSessionUser(c)
 	if !user.HasPermission(EDITOR) {
 		http.Error(w, "You are not editor", http.StatusMethodNotAllowed)
 		return
@@ -461,7 +456,7 @@ func needLogin(c *web.C, h http.Handler) http.Handler {
 
 func needAdmin(c *web.C, h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		user := getUser(*c)
+		user := getSessionUser(*c)
 
 		if !user.HasPermission(ADMIN) {
 			http.Error(w, "You are not admin", http.StatusMethodNotAllowed)
@@ -488,8 +483,8 @@ func addTestUser(db *mgo.Database) {
 	}
 
 	admin := &User{
-		Name: "admin",
-		Password: []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
+		Name:        "admin",
+		Password:    []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
 		Permissions: map[Permission]bool{ADMIN: true, EDITOR: true},
 	}
 
