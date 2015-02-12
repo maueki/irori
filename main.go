@@ -31,23 +31,18 @@ type Page struct {
 	History []History
 }
 
-type UserRef struct {
-	Ref string        `bson:"$ref"`
-	Id  bson.ObjectId `bson:"$id"`
-}
-
 type Article struct {
-	Title string
-	Body  string
-	User  UserRef
-	Date  time.Time
+	Title  string
+	Body   string
+	UserId bson.ObjectId
+	Date   time.Time
 }
 
 type History struct {
-	Title []byte
-	Body  []byte
-	User  UserRef
-	Date  time.Time
+	Title  []byte
+	Body   []byte
+	UserId bson.ObjectId
+	Date   time.Time
 }
 
 type Permission string
@@ -96,7 +91,7 @@ func (a *Article) createHistoryData() (*History, error) {
 	history := History{}
 	history.Title = title
 	history.Body = body
-	history.User = a.User
+	history.UserId = a.UserId
 	history.Date = a.Date
 
 	return &history, nil
@@ -110,8 +105,7 @@ func (p *Page) save(c web.C, r *http.Request) error {
 		return err
 	}
 
-	p.Article.User.Id = user.Id
-	p.Article.User.Ref = "user"
+	p.Article.UserId = user.Id
 	p.Article.Date = time.Now()
 
 	wikidb := getWikiDb(c)
@@ -173,8 +167,8 @@ func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	user := getSessionUser(c)
 
 	p := &Page{
-		Id:      bson.NewObjectId(),
-		Article: Article{Title: "", Body: "", Date: time.Now(), User: UserRef{Id: user.Id, Ref: "user"}}}
+		Id: bson.NewObjectId(),
+		Article: Article{Title: "", Body: "", Date: time.Now(), UserId: user.Id}}
 
 	fmt.Println(p.Id.Hex())
 	err := wikidb.Db.C("page").Insert(p)
@@ -204,7 +198,7 @@ func viewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	// get last edited user info
 	wikidb := getWikiDb(c)
-	editeduser, err := getUserById(wikidb.Db, page.Article.User.Id)
+	editeduser, err := getUserById(wikidb.Db, page.Article.UserId)
 	if err == mgo.ErrNotFound {
 		// TODO : when user is removed?
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -483,8 +477,8 @@ func addTestUser(db *mgo.Database) {
 	}
 
 	admin := &User{
-		Name:        "admin",
-		Password:    []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
+		Name: "admin",
+		Password: []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
 		Permissions: map[Permission]bool{ADMIN: true, EDITOR: true},
 	}
 
