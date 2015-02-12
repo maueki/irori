@@ -3,23 +3,18 @@ package main
 import (
 	"errors"
 	"fmt"
-	//"github.com/maueki/go_wiki/db"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
 	"code.google.com/p/go.crypto/bcrypt"
-
+	"github.com/bkaradzic/go-lz4"
 	"github.com/flosch/pongo2"
 	_ "github.com/flosch/pongo2-addons"
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/gorilla/sessions"
 	"github.com/zenazn/goji"
 	"github.com/zenazn/goji/web"
-
-	"github.com/bkaradzic/go-lz4"
-	"github.com/gorilla/sessions"
-
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -108,7 +103,7 @@ func (a *Article) createHistoryData() (*History, error) {
 }
 
 func (p *Page) save(c web.C, r *http.Request) error {
-	user := getUser(c)
+	user := getSessionUser(c)
 
 	history, err := p.Article.createHistoryData()
 	if err != nil {
@@ -158,7 +153,7 @@ func executeWriterFromFile(w http.ResponseWriter, path string, context *pongo2.C
 }
 
 // precond: must call after needLogin()
-func getUser(c web.C) *User {
+func getSessionUser(c web.C) *User {
 	user, ok := c.Env["user"]
 	if !ok {
 		log.Fatalln("user not found")
@@ -175,7 +170,7 @@ func getUser(c web.C) *User {
 func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	wikidb := getWikiDb(c)
 
-	user := getUser(c)
+	user := getSessionUser(c)
 
 	p := &Page{
 		Id:      bson.NewObjectId(),
@@ -205,7 +200,7 @@ func viewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get current login user info
-	user := getUser(c)
+	user := getSessionUser(c)
 
 	// get last edited user info
 	wikidb := getWikiDb(c)
@@ -238,7 +233,7 @@ func editPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 	}
 
-	user := getUser(c)
+	user := getSessionUser(c)
 
 	err = executeWriterFromFile(w, "view/edit.html",
 		&pongo2.Context{"loginuser": user, "page": p, "isEditor": user.HasPermission(EDITOR)})
@@ -248,7 +243,7 @@ func editPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func savePagePostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	user := getUser(c)
+	user := getSessionUser(c)
 	if !user.HasPermission(EDITOR) {
 		http.Error(w, "You are not editor", http.StatusMethodNotAllowed)
 		return
@@ -324,7 +319,7 @@ func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func topPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	user, err := getUserFromDB(c, r)
+	user, err := getUserIfLoggedin(c, r)
 	if err != nil {
 		if err == ErrUserNotFound {
 			err := executeWriterFromFile(w, "view/prelogin.html", &pongo2.Context{})
@@ -418,7 +413,7 @@ func includeDb(db *mgo.Database) func(c *web.C, h http.Handler) http.Handler {
 	}
 }
 
-func getUserFromDB(c web.C, r *http.Request) (*User, error) {
+func getUserIfLoggedin(c web.C, r *http.Request) (*User, error) {
 	session, _ := store.Get(r, SESSION_NAME)
 	id, ok := session.Values["userid"]
 	if !ok {
@@ -438,7 +433,7 @@ func getUserFromDB(c web.C, r *http.Request) (*User, error) {
 
 func needLogin(c *web.C, h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		user, err := getUserFromDB(*c, r)
+		user, err := getUserIfLoggedin(*c, r)
 
 		if err == ErrUserNotFound {
 			session, _ := store.Get(r, SESSION_NAME)
@@ -461,7 +456,7 @@ func needLogin(c *web.C, h http.Handler) http.Handler {
 
 func needAdmin(c *web.C, h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		user := getUser(*c)
+		user := getSessionUser(*c)
 
 		if !user.HasPermission(ADMIN) {
 			http.Error(w, "You are not admin", http.StatusMethodNotAllowed)
@@ -512,7 +507,6 @@ func setRoute(db *mgo.Database) {
 
 	loginUserActionMux := web.New()
 	loginUserActionMux.Use(needLogin)
-	loginUserActionMux.Use(includeDb(db))
 	loginUserActionMux.Get("/action/createNewPage", createNewPageGetHandler)
 
 	adminMux := web.New()
@@ -524,7 +518,6 @@ func setRoute(db *mgo.Database) {
 	// Mux : create new page or show a page created already
 	pageMux := web.New()
 	pageMux.Use(needLogin)
-	pageMux.Use(includeDb(db))
 	pageMux.Get("/wiki/:pageId", viewPageGetHandler)
 	pageMux.Get("/wiki/:pageId/edit", editPageGetHandler)
 	pageMux.Post("/wiki/:pageId", savePagePostHandler)
@@ -532,7 +525,6 @@ func setRoute(db *mgo.Database) {
 	// Mux : convert Markdown to HTML which is send by Ajax
 	mdMux := web.New()
 	mdMux.Use(needLogin)
-	mdMux.Use(includeDb(db))
 	mdMux.Post("/markdown", markdownPostHandler)
 
 	goji.Use(includeDb(db))
