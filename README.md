@@ -6,10 +6,11 @@ Irori
 
 # What's Irori
 
-A simple and small system for managing documents.
+A simple and small knowledge sharing system like wiki.
 
 # Requirements
 
+* Go (1.4 or later)
 * MongoDB
 * coffee-script
 
