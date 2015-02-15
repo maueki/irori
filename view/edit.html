@@ -20,12 +20,21 @@
 
 		<!-- main editor -->
 		<div class="row" id="editpage-body-row">
-			<div class="col-xs-6" id="editpage-body-col">
-				<textarea name="body" id="body-editor">{{ page.Article.Body|stringformat:"%s" }}</textarea>
+			<div class="col-xs-6" id="editpage-body-col-editor">
+				<div class="panel panel-default">
+					<div class="panel-heading"><i class="fa fa-pencil-square-o"></i> edit</div>
+					<div class="panel-body">
+						<textarea class="form-control" name="body" id="body-editor">{{ page.Article.Body|stringformat:"%s" }}</textarea>
+					</div>
+				</div>
 			</div>
-			<div class="col-xs-6" id="editpage-body-col">
-				<!-- preview -->
-				<div id="output">{{page.Article.Body|markdown|sanitize}}</div>
+			<div class="col-xs-6" id="editpage-body-col-preview">
+				<div class="panel panel-default">
+					<div class="panel-heading"><i class="fa fa-laptop"></i> preview</div>
+					<div class="panel-body">
+						<div id="output">{{page.Article.Body|markdown|sanitize}}</div>
+					</div>
+				</div>
 			</div>
 		</div><!-- row -->
 

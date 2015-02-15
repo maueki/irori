@@ -12,8 +12,13 @@ html, body {
     position: relative;
 }
 
-form {
+form, .panel {
     height: 100%;
+}
+
+.panel-body {
+    height: calc(100% - 41px);
+    padding: 0;
 }
 
 #title-editor {
@@ -26,7 +31,15 @@ form {
     min-height: 100;
 }
 
-#editpage-body-col {
+#editpage-body-col-editor {
+    padding-right: 0px;
+    margin-bottom: 15px;
+    height: 100%;
+    min-height: 100;
+}
+
+#editpage-body-col-preview {
+    padding-left: 0px;
     margin-bottom: 15px;
     height: 100%;
     min-height: 100;
@@ -35,7 +48,6 @@ form {
 #body-editor {
     width: 100%;
     height: 100%;
-    min-height: 400px;
     padding: 20px;
 
     display: inline-block;
@@ -49,7 +61,7 @@ form {
     border: none;
     border-right: 1px solid #ccc;
     outline: none;
-    background-color: #f6f6f6;
+    background-color: white;
     font-size: 14px;
     font-family: 'Monaco', courier, monospace;
 }
@@ -57,7 +69,6 @@ form {
 #output {
     width: 100%;
     height: 100%;
-    min-height: 400px;
     padding: 20px;
     overflow-x: hidden;
     overflow-y: scroll;
