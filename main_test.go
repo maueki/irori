@@ -19,9 +19,9 @@ import (
 func createUser(t *testing.T, db *mgo.Database) {
 	hash, _ := bcrypt.GenerateFromPassword([]byte("test"), bcrypt.DefaultCost)
 	user := &User{
-		Name:     "test",
-		Password: hash,
-		Permissions: map[Permission]bool { EDITOR: true},
+		Name:        "test",
+		Password:    hash,
+		Permissions: map[Permission]bool{EDITOR: true},
 	}
 
 	err := db.C("user").Insert(user)

@@ -167,7 +167,7 @@ func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	user := getSessionUser(c)
 
 	p := &Page{
-		Id: bson.NewObjectId(),
+		Id:      bson.NewObjectId(),
 		Article: Article{Title: "", Body: "", Date: time.Now(), UserId: user.Id}}
 
 	fmt.Println(p.Id.Hex())
@@ -477,8 +477,8 @@ func addTestUser(db *mgo.Database) {
 	}
 
 	admin := &User{
-		Name: "admin",
-		Password: []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
+		Name:        "admin",
+		Password:    []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
 		Permissions: map[Permission]bool{ADMIN: true, EDITOR: true},
 	}
 
