@@ -3,6 +3,7 @@
 {% block title %}{{page.Article.Title}}{% endblock %}
 
 {% block posthead_main %}
+<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
 <link href="/assets/css/editor.css" rel="stylesheet">
 {% endblock %}
 
@@ -10,21 +11,30 @@
 <div id="editor" class="container">
 	<form action="/wiki/{{page.Id.Hex()}}" method="POST">
 		<!-- title editor -->
-		<div class="row">
+		<div class="row" id="title-editor">
 			<div class="col-xs-12">
-				<input type="text" name="title" id="title-editor"
+				<input type="text" name="title"
 				class="form-control input-lg" value="{{page.Article.Title}}" placeholder="タイトル">
 			</div>
 		</div><!-- row -->
 
 		<!-- main editor -->
 		<div class="row" id="editpage-body-row">
-			<div class="col-xs-6">
-				<textarea name="body" id="body-editor">{{ page.Article.Body|stringformat:"%s" }}</textarea>
+			<div class="col-xs-6" id="editpage-body-col-editor">
+				<div class="panel panel-default">
+					<div class="panel-heading"><i class="fa fa-pencil-square-o"></i> edit</div>
+					<div class="panel-body">
+						<textarea class="form-control" name="body" id="body-editor">{{ page.Article.Body|stringformat:"%s" }}</textarea>
+					</div>
+				</div>
 			</div>
-			<div class="col-xs-6">
-				<!-- preview -->
-				<div id="output">{{page.Article.Body|markdown|sanitize}}</div>
+			<div class="col-xs-6" id="editpage-body-col-preview">
+				<div class="panel panel-default">
+					<div class="panel-heading"><i class="fa fa-laptop"></i> preview</div>
+					<div class="panel-body">
+						<div id="output">{{page.Article.Body|markdown|sanitize}}</div>
+					</div>
+				</div>
 			</div>
 		</div><!-- row -->
 
@@ -32,12 +42,14 @@
 		<div class="row" id="editpage-action-btn-row">
 			<div class="col-xs-12">
 				{% if isEditor %}
-				<input type="submit" class="btn btn-primary pull-right" value="Save">
+                <button type="submit" class="btn btn-primary pull-right">
 				{% else %}
-				<input type="submit" class="btn btn-primary pull-right"
-				data-container="body" disabled="disable" value="Save"
+				<button type="submit" class="btn btn-primary pull-right"
+				data-container="body" disabled="disable"
 				data-toggle="popover" data-placement="left" data-content="Disable for guest">
 				{% endif %}
+					<i class="fa fa-floppy-o"></i> Save
+				</button>
 			</div>
 		</div><!-- row -->
 	</form>
