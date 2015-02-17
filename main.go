@@ -32,6 +32,7 @@ type Page struct {
 }
 
 type Article struct {
+	Id     bson.ObjectId `bson:"_id,omitempty"`
 	Title  string
 	Body   string
 	UserId bson.ObjectId
@@ -39,6 +40,7 @@ type Article struct {
 }
 
 type History struct {
+	Id     bson.ObjectId `bson:"_id,omitempty"`
 	Title  []byte
 	Body   []byte
 	UserId bson.ObjectId
@@ -89,6 +91,7 @@ func (a *Article) createHistoryData() (*History, error) {
 	}
 
 	history := History{}
+	history.Id = a.Id
 	history.Title = title
 	history.Body = body
 	history.UserId = a.UserId
@@ -100,6 +103,7 @@ func (a *Article) createHistoryData() (*History, error) {
 func (p *Page) save(c web.C, r *http.Request) error {
 	user := getSessionUser(c)
 
+	p.Article.Id = bson.NewObjectId()
 	history, err := p.Article.createHistoryData()
 	if err != nil {
 		return err
@@ -167,7 +171,7 @@ func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	user := getSessionUser(c)
 
 	p := &Page{
-		Id: bson.NewObjectId(),
+		Id:      bson.NewObjectId(),
 		Article: Article{Title: "", Body: "", Date: time.Now(), UserId: user.Id}}
 
 	fmt.Println(p.Id.Hex())
@@ -477,8 +481,8 @@ func addTestUser(db *mgo.Database) {
 	}
 
 	admin := &User{
-		Name: "admin",
-		Password: []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
+		Name:        "admin",
+		Password:    []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
 		Permissions: map[Permission]bool{ADMIN: true, EDITOR: true},
 	}
 
