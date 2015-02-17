@@ -1,4 +1,4 @@
-html, body, .container, #page-edit {
+.container, #page-edit {
     height:100%;
     width: 100%;
     overflow-x: hidden;
