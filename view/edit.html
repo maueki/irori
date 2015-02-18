@@ -4,6 +4,7 @@
 
 {% block posthead_main %}
 <link href="/assets/css/editor.css" rel="stylesheet">
+<link href="/assets/css/project-list.css" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -19,10 +20,28 @@
 
 		<!-- main editor -->
 		<div class="row" id="editpage-body-row">
-			<div class="col-xs-6">
+			<nav class="sidebar col-xs-2">
+				<h3>Projects</h3>
+				<ul class="project-list">
+					{% for proj in projects %}
+					<li>
+						{% if proj.Id in page.Projects %}
+						<a href="#" class="project-list-item selected">
+						{% else %}
+						<a href="#" class="project-list-item ">
+						{% endif %}
+						<input style="display:none" type="checkbox" name="projects" value="{{proj.Id.Hex()}}">
+						<span>{{proj.Name}}</span>
+						</a>
+					</li>
+					{% endfor %}
+				</ul>
+			</nav>
+
+			<div class="col-xs-5">
 				<textarea name="body" id="body-editor">{{ page.Article.Body|stringformat:"%s" }}</textarea>
 			</div>
-			<div class="col-xs-6">
+			<div class="col-xs-5">
 				<!-- preview -->
 				<div id="output">{{page.Article.Body|markdown|sanitize}}</div>
 			</div>
@@ -50,5 +69,24 @@
   $(function () {
     $('[data-toggle="popover"]').popover('show')
   });
+
+  $(function() {
+    $('.project-list li a').each(function(i) {
+      $(this).click( function(e) {
+        console.log('clicked');
+        var $checkbox = $('input', this);
+        var $item_a = $('a', this);
+        if ($checkbox.prop('checked')) {
+          $checkbox.prop('checked',false);
+          $(this).removeClass('selected');
+        } else {
+          $checkbox.prop('checked',true);
+          $(this).addClass('selected');
+        }
+        return false; // cancel event chain
+      });
+    });
+  });
+
 </script>
 {% endblock %}
