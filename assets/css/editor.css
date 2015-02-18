@@ -1,26 +1,53 @@
+html, body {
+    height:100%;
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
+
 #editor {
     width: auto;
+    height: calc(100% - 51px);
+    padding: 15px;
+    background-color: #ECE7E4;
+    position: relative;
+}
+
+form, .panel {
     height: 100%;
-    min-height: 100%;
-    font-family: 'Helvetica Neue', Arial, sans-serif;
-    color: #333;
-    margin-top: 15px;
-    margin-left: 15px;
-    margin-right: 15px;
+}
+
+.panel-body {
+    height: calc(100% - 41px);
+    padding: 0;
 }
 
 #title-editor {
-    margin-bottom: 10px;
 }
 
 #editpage-body-row {
+    margin-top: 15px;
     margin-bottom: 15px;
+    height: calc(100% - 46px - 34px - 45px);
+    min-height: 100;
+}
+
+#editpage-body-col-editor {
+    padding-right: 0px;
+    margin-bottom: 15px;
+    height: 100%;
+    min-height: 100;
+}
+
+#editpage-body-col-preview {
+    padding-left: 0px;
+    margin-bottom: 15px;
+    height: 100%;
+    min-height: 100;
 }
 
 #body-editor {
     width: 100%;
-    height: 400px;
-    min-height: 400px;
+    height: 100%;
     padding: 20px;
 
     display: inline-block;
@@ -34,21 +61,26 @@
     border: none;
     border-right: 1px solid #ccc;
     outline: none;
-    background-color: #f6f6f6;
+    background-color: white;
     font-size: 14px;
     font-family: 'Monaco', courier, monospace;
 }
 
 #output {
     width: 100%;
-    height: 400px;
-    min-height: 400px;
+    height: 100%;
     padding: 20px;
     overflow-x: hidden;
     overflow-y: scroll;
+    background-color: white;
 }
 
 #editpage-action-btn-row {
-    padding-right: 10px;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    margin-top: 15px;
+    margin-bottom: 30px;
+    padding-right: 20px;
 }
 

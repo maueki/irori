@@ -33,6 +33,7 @@ type Page struct {
 }
 
 type Article struct {
+	Id     bson.ObjectId `bson:"_id,omitempty"`
 	Title  string
 	Body   string
 	UserId bson.ObjectId
@@ -40,6 +41,7 @@ type Article struct {
 }
 
 type History struct {
+	Id     bson.ObjectId `bson:"_id,omitempty"`
 	Title  []byte
 	Body   []byte
 	UserId bson.ObjectId
@@ -96,6 +98,7 @@ func (a *Article) createHistoryData() (*History, error) {
 	}
 
 	history := History{}
+	history.Id = a.Id
 	history.Title = title
 	history.Body = body
 	history.UserId = a.UserId
@@ -107,6 +110,7 @@ func (a *Article) createHistoryData() (*History, error) {
 func (p *Page) save(c web.C, r *http.Request) error {
 	user := getSessionUser(c)
 
+	p.Article.Id = bson.NewObjectId()
 	history, err := p.Article.createHistoryData()
 	if err != nil {
 		return err
