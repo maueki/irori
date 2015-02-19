@@ -9,96 +9,98 @@
 {% endblock %}
 
 {% block content %}
-<div id="editor" class="container">
-	<form action="/wiki/{{page.Id.Hex()}}" method="POST">
-		<!-- title editor -->
-		<div class="row" id="title-editor">
-			<div class="col-xs-12">
-				<input type="text" name="title"
-				class="form-control input-lg" value="{{page.Article.Title}}" placeholder="タイトル">
-			</div>
-		</div><!-- row -->
+<div class="container">
+  <form action="/wiki/{{page.Id.Hex()}}" method="POST">
+    <div class="row" id="page-edit">
+      <div class="col-xs-2">
+        <nav class="sidebar">
+          <h3>Projects</h3>
+          <ul class="project-list">
+            {% for proj in projects %}
+            <li>
+              <a href="#" class="project-list-item {% if proj.Id in page.Projects %}selected{% endif %}">
+                <input style="display:none" type="checkbox" name="projects" value="{{proj.Id.Hex()}}">
+                <span>{{proj.Name}}</span>
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </nav>
+      </div>
 
-		<!-- main editor -->
-		<div class="row" id="editpage-body-row">
-			<nav class="sidebar col-xs-2">
-				<h3>Projects</h3>
-				<ul class="project-list">
-					{% for proj in projects %}
-					<li>
-						{% if proj.Id in page.Projects %}
-						<a href="#" class="project-list-item selected">
-						{% else %}
-						<a href="#" class="project-list-item ">
-						{% endif %}
-						<input style="display:none" type="checkbox" name="projects" value="{{proj.Id.Hex()}}">
-						<span>{{proj.Name}}</span>
-						</a>
-					</li>
-					{% endfor %}
-				</ul>
-			</nav>
+      <div class="col-xs-10" id="page-editor">
+        <div class="row">
+          <!-- title editor -->
+          <div class="col-xs-12">
+            <input type="text" name="title"
+                    class="form-control input-lg" value="{{page.Article.Title}}" placeholder="タイトル">
+          </div>
+        </div><!-- row -->
 
-			<div class="col-xs-5" id="editpage-body-col-editor">
-				<div class="panel panel-default">
-					<div class="panel-heading"><i class="fa fa-pencil-square-o"></i> edit</div>
-					<div class="panel-body">
-						<textarea class="form-control" name="body" id="body-editor">{{ page.Article.Body|stringformat:"%s" }}</textarea>
-					</div>
-				</div>
-			</div>
-			<div class="col-xs-5" id="editpage-body-col-preview">
-				<div class="panel panel-default">
-					<div class="panel-heading"><i class="fa fa-laptop"></i> preview</div>
-					<div class="panel-body">
-						<div id="output">{{page.Article.Body|markdown|sanitize}}</div>
-					</div>
-				</div>
-			</div>
-		</div><!-- row -->
+        <!-- main editor -->
+        <div class="row" id="editpage-body-row">
+          <div class="col-xs-6" id="editpage-body-col-editor">
+            <div class="panel panel-default">
+              <div class="panel-heading"><i class="fa fa-pencil-square-o"></i> edit</div>
+              <div class="panel-body">
+                <textarea class="form-control" name="body" id="body-editor">{{ page.Article.Body|stringformat:"%s" }}</textarea>
+              </div>
+            </div>
+          </div>
+          <div class="col-xs-6" id="editpage-body-col-preview">
+            <div class="panel panel-default">
+              <div class="panel-heading"><i class="fa fa-laptop"></i> preview</div>
+              <div class="panel-body">
+                <div id="output">{{page.Article.Body|markdown|sanitize}}</div>
+              </div>
+            </div>
+          </div>
+        </div><!-- row -->
 
-		<!-- action btn -->
-		<div class="row" id="editpage-action-btn-row">
-			<div class="col-xs-12">
-				{% if isEditor %}
-                <button type="submit" class="btn btn-primary pull-right">
-				{% else %}
-				<button type="submit" class="btn btn-primary pull-right"
-				data-container="body" disabled="disable"
-				data-toggle="popover" data-placement="left" data-content="Disable for guest">
-				{% endif %}
-					<i class="fa fa-floppy-o"></i> Save
-				</button>
-			</div>
-		</div><!-- row -->
-	</form>
+        <!-- action btn -->
+        <div class="row" id="editpage-action-btn-row">
+          <div class="col-xs-12">
+            {% if isEditor %}
+            <button type="submit" class="btn btn-primary pull-right">
+              {% else %}
+              <button type="submit" class="btn btn-primary pull-right"
+                      data-container="body" disabled="disable"
+                      data-toggle="popover" data-placement="left" data-content="Disable for guest">
+                {% endif %}
+                <i class="fa fa-floppy-o"></i> Save
+              </button>
+          </div>
+        </div><!-- row -->
+      </div>
+    </div>
+  </form>
 </div>
 {% endblock %}
 
 {% block exscript %}
 <script src="/assets/js/editor.js"></script>
 <script type="text/javascript">
-  $(function () {
-    $('[data-toggle="popover"]').popover('show')
-  });
+$(function () {
+  $('[data-toggle="popover"]').popover('show')
+});
 
-  $(function() {
-    $('.project-list li a').each(function(i) {
-      $(this).click( function(e) {
-        console.log('clicked');
-        var $checkbox = $('input', this);
-        var $item_a = $('a', this);
-        if ($checkbox.prop('checked')) {
-          $checkbox.prop('checked',false);
-          $(this).removeClass('selected');
-        } else {
-          $checkbox.prop('checked',true);
-          $(this).addClass('selected');
-        }
-        return false; // cancel event chain
-      });
+$(function() {
+  $('.project-list li a').each(function(i) {
+    $(this).click( function(e) {
+      console.log('clicked');
+      var $checkbox = $('input', this);
+      var $item_a = $('a', this);
+      if ($checkbox.prop('checked')) {
+        $checkbox.prop('checked',false);
+        $(this).removeClass('selected');
+      } else {
+        $checkbox.prop('checked',true);
+        $(this).addClass('selected');
+      }
+      return false; // cancel event chain
     });
   });
+});
 
 </script>
 {% endblock %}

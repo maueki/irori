@@ -1,11 +1,11 @@
-html, body {
+html, body, .container, #page-edit {
     height:100%;
+    width: 100%;
     overflow-x: hidden;
     overflow-y: hidden;
 }
 
-#editor {
-    width: auto;
+#page-editor {
     height: calc(100% - 51px);
     padding: 15px;
     background-color: #ECE7E4;
