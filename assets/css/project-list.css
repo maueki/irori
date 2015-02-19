@@ -1,0 +1,44 @@
+
+a:hover, a:focus {
+    text-decoration: none;
+}
+
+ul {
+    padding: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+ul.project-list {
+    line-height: 16px;
+    border: 1px solid transparent;
+    border-top-color: transparent;
+    border-top-style: solid;
+    border-top-width: 1px;
+}
+
+.project-list li {
+    list-style-type: none;
+    padding-left: 10px;
+}
+
+.project-list-item {
+    text-decoration: none;
+    display: block;
+
+    padding: 4px 10px;
+    margin: 0 0 2px;
+    font-size: 12px;
+
+    border-radius: 3px;
+}
+
+.project-list-item.selected {
+    font-weight: bold;
+}
+
+.project-list-item.selected:before {
+    font-family: "FontAwesome";
+    content: "\f00c";
+    margin-left: -14px;
+}

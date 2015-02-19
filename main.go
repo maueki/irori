@@ -26,9 +26,10 @@ const SESSION_NAME = "go_wiki_session"
 var store = sessions.NewCookieStore([]byte("something-very-secret")) // FIXME
 
 type Page struct {
-	Id      bson.ObjectId `bson:"_id"`
-	Article Article
-	History []History
+	Id       bson.ObjectId `bson:"_id"`
+	Article  Article
+	History  []History
+	Projects []bson.ObjectId
 }
 
 type Article struct {
@@ -59,6 +60,12 @@ type User struct {
 	Name        string
 	Password    []byte
 	Permissions map[Permission]bool
+	Projects    map[bson.ObjectId]bool
+}
+
+type Project struct {
+	Id   bson.ObjectId `bson:"_id,omitempty"`
+	Name string
 }
 
 func (u *User) HasPermission(perm Permission) bool {
@@ -113,8 +120,9 @@ func (p *Page) save(c web.C, r *http.Request) error {
 	p.Article.Date = time.Now()
 
 	wikidb := getWikiDb(c)
+
 	return wikidb.Db.C("page").UpdateId(p.Id,
-		bson.M{"$set": bson.M{"article": p.Article},
+		bson.M{"$set": bson.M{"article": p.Article, "projects": p.Projects},
 			"$push": bson.M{"history": history}})
 }
 
@@ -225,7 +233,7 @@ func viewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 func editPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	pageId := c.URLParams["pageId"]
 
-	p, err := getPageFromDb(c, pageId)
+	page, err := getPageFromDb(c, pageId)
 	if err != nil {
 		// FIXME : redirect to top page or "NotFound" page
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -233,14 +241,32 @@ func editPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	user := getSessionUser(c)
 
+	wikidb := getWikiDb(c)
+	projects := []Project{}
+
+	err = wikidb.Db.C("projects").Find(bson.M{}).All(&projects)
+	if err != nil {
+		log.Fatal("@@@ projects")
+	}
+
+	log.Println("Projects:", projects)
+	log.Println("page Projects:", page.Projects)
+
 	err = executeWriterFromFile(w, "view/edit.html",
-		&pongo2.Context{"loginuser": user, "page": p, "isEditor": user.HasPermission(EDITOR)})
+		&pongo2.Context{
+			"loginuser": user,
+			"page":      page,
+			"isEditor":  user.HasPermission(EDITOR),
+			"projects":  projects,
+		})
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func savePagePostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
 	user := getSessionUser(c)
 	if !user.HasPermission(EDITOR) {
 		http.Error(w, "You are not editor", http.StatusMethodNotAllowed)
@@ -257,6 +283,16 @@ func savePagePostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	p.Article.Title = r.FormValue("title")
 	p.Article.Body = r.FormValue("body")
+
+	pids := []bson.ObjectId{}
+	for _, v := range r.Form["projects"] {
+		// FIXME: check project id
+		if pid := bson.ObjectIdHex(v); pid.Valid() {
+			pids = append(pids, pid)
+		}
+	}
+	p.Projects = pids
+
 	err = p.save(c, r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -466,8 +502,9 @@ func needAdmin(c *web.C, h http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-func addTestUser(db *mgo.Database) {
-	db.C("user").RemoveAll(nil) // FIXME
+func addTestData(db *mgo.Database) {
+	db.C("user").RemoveAll(nil)     // FIXME
+	db.C("projects").RemoveAll(nil) // FIXME
 
 	guestHash, _ := bcrypt.GenerateFromPassword([]byte("guest"), bcrypt.DefaultCost)
 	user := &User{
@@ -491,10 +528,17 @@ func addTestUser(db *mgo.Database) {
 		log.Fatalln(err)
 	}
 
+	projIrori := &Project{
+		Name: "irori"}
+
+	err = db.C("projects").Insert(projIrori)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 func setRoute(db *mgo.Database) {
-	addTestUser(db)
+	addTestData(db)
 
 	m := web.New()
 	m.Get("/login", loginPageGetHandler)
