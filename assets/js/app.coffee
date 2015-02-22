@@ -15,4 +15,10 @@ app.factory 'Project', [
 app.controller 'ProjectsCtrl', [
   'Project', (Project) ->
     this.projects = Project.query()
+    this.project = new Project( Name: "")
+    ctrl = this
+    this.addProject = () ->
+      console.log("addProject: ", ctrl.project)
+      ctrl.project.$save () ->
+        ctrl.projects = Project.query()
   ]

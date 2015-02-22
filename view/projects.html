@@ -2,19 +2,36 @@
 
 {% block content %}
 <div class="container" ng-controller="ProjectsCtrl as projCtrl">
-  <table class="table projects-table" ng-show="projCtrl.projects">
-    <thead>
-      <tr>
-        <th></th>
-        <th> Name </th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr ng-repeat="proj in projCtrl.projects">
-        <td></td>
-        <td>{$ proj.Name $}</td>
-      </tr>
-    </tbody>
-  </table>
+  <h1>Projects</h1>
+
+  <div class="row">
+    <div class="col-xs-5">
+      <form ng-submit="projCtrl.addProject()" name="addProject" class="form-inline">
+        <div class="form-group">
+          <input class="form-control" name="" type="text" ng-model="projCtrl.project.Name" placeholder="Project Name"/>
+          <input type="submit" value="Add Project" class="btn btn-primary"/>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-xs-12">
+      <table class="table projects-table" ng-show="projCtrl.projects">
+        <thead>
+          <tr>
+            <th></th>
+            <th> Name </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr ng-repeat="proj in projCtrl.projects">
+            <td></td>
+            <td>{$ proj.Name $}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 {% endblock %}

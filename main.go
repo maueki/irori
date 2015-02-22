@@ -64,7 +64,7 @@ type User struct {
 }
 
 type Project struct {
-	Id   bson.ObjectId `bson:"_id,omitempty" json:"id"`
+	Id   bson.ObjectId `bson:"_id,omitempty" json:"id,omitempty"`
 	Name string
 }
 
@@ -561,6 +561,7 @@ func setRoute(db *mgo.Database) {
 	apiMux := web.New()
 	apiMux.Use(needLogin)
 	apiMux.Get("/api/projects.json", apiProjectsGetHandler)
+	apiMux.Post("/api/projects.json", apiProjectsPostHandler)
 
 	// Mux : create new page or show a page created already
 	pageMux := web.New()

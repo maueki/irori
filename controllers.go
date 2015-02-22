@@ -44,3 +44,29 @@ func apiProjectsGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
 }
+
+func apiProjectsPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	var p Project
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	wikidb := getWikiDb(c)
+
+	changeinfo, err := wikidb.Db.C("projects").Upsert(bson.M{"name": p.Name},
+		bson.M{"$setOnInsert": p})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if changeinfo.UpsertedId == nil {
+		// FIXME: project name already exists.
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
