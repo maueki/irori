@@ -1,6 +1,7 @@
-html, body, .container, #page-edit {
+form {
     height:100%;
     width: 100%;
+    padding: 0;
     overflow-x: hidden;
     overflow-y: hidden;
 }
@@ -12,8 +13,9 @@ html, body, .container, #page-edit {
     position: relative;
 }
 
-form, .panel {
+.panel {
     height: 100%;
+    width: 100%;
 }
 
 .panel-body {
