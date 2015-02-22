@@ -1,5 +1,5 @@
 
-GOSRC=main.go filter.go db/db.go
+GOSRC=$(wildcard *.go)
 COFFEEDIR=assets/js
 COFFEESRC=$(wildcard $(COFFEEDIR)/*.coffee)
 
