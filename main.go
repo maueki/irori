@@ -64,7 +64,7 @@ type User struct {
 }
 
 type Project struct {
-	Id   bson.ObjectId `bson:"_id,omitempty"`
+	Id   bson.ObjectId `bson:"_id,omitempty" json:"id,omitempty"`
 	Name string
 }
 
@@ -179,7 +179,7 @@ func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	user := getSessionUser(c)
 
 	p := &Page{
-		Id:      bson.NewObjectId(),
+		Id: bson.NewObjectId(),
 		Article: Article{Title: "", Body: "", Date: time.Now(), UserId: user.Id}}
 
 	fmt.Println(p.Id.Hex())
@@ -518,8 +518,8 @@ func addTestData(db *mgo.Database) {
 	}
 
 	admin := &User{
-		Name:        "admin",
-		Password:    []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
+		Name: "admin",
+		Password: []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
 		Permissions: map[Permission]bool{ADMIN: true, EDITOR: true},
 	}
 
@@ -556,6 +556,12 @@ func setRoute(db *mgo.Database) {
 	adminMux.Use(needAdmin)
 	adminMux.Get("/admin/adduser", addUserGetHandler)
 	adminMux.Post("/admin/adduser", addUserPostHandler)
+	adminMux.Get("/admin/projects", projectsGetHandler)
+
+	apiMux := web.New()
+	apiMux.Use(needLogin)
+	apiMux.Get("/api/projects.json", apiProjectsGetHandler)
+	apiMux.Post("/api/projects.json", apiProjectsPostHandler)
 
 	// Mux : create new page or show a page created already
 	pageMux := web.New()
@@ -575,6 +581,7 @@ func setRoute(db *mgo.Database) {
 	goji.Handle("/markdown", mdMux)
 	goji.Handle("/action/*", loginUserActionMux)
 	goji.Handle("/admin/*", adminMux)
+	goji.Handle("/api/*", apiMux)
 	goji.Handle("/*", m)
 }
 
