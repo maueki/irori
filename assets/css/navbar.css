@@ -1,7 +1,9 @@
 .navbar {
-    margin-bottom: 0px;
+  margin-bottom: 0;
+  padding-left:  0;
+  padding-right: 20px;
 }
 
 .icon-irori {
-    font-size: 2.8em;
+  font-size: 2.8em;
 }
