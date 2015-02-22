@@ -1,20 +1,20 @@
 {% extends "navbar.html" %}
 
 {% block content %}
-<div class="container" ng-controller="ProjectsController as projCtrl">
-<table class="table projects-table" ng-show="projCtrl.projects">
-  <thead>
-    <tr>
-      <th></th>
-      <th> Name </th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr ng-repeat="proj in projCtrl.projects">
-      <td></td>
-      <td>{$ proj.Name $}</td>
-    </tr>
-  </tbody>
-</table>
+<div class="container" ng-controller="ProjectsCtrl as projCtrl">
+  <table class="table projects-table" ng-show="projCtrl.projects">
+    <thead>
+      <tr>
+        <th></th>
+        <th> Name </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr ng-repeat="proj in projCtrl.projects">
+        <td></td>
+        <td>{$ proj.Name $}</td>
+      </tr>
+    </tbody>
+  </table>
 </div>
 {% endblock %}

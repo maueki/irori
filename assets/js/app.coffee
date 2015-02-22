@@ -1,12 +1,18 @@
 
-app = angular.module('irori', [])
+app = angular.module 'irori', ['ngResource']
+
+# Use '{$ $}' instead of '{{ }}' that is used by pongo2.
 app.config ($interpolateProvider) ->
   $interpolateProvider.startSymbol '{$'
   $interpolateProvider.endSymbol '$}'
 
-app.controller('ProjectsController', ['$http', ($http) ->
-  ctrl = this
-  ctrl.projects = []
-  $http.get('/api/projects.json').success (data) ->
-    ctrl.projects = data
-  ])
+app.factory 'Project', [
+  '$resource', ($resource) ->
+    $resource '/api/projects.json', {}, {
+      query: {method:'GET', isArray:true}
+    }]
+
+app.controller 'ProjectsCtrl', [
+  'Project', (Project) ->
+    this.projects = Project.query()
+  ]
