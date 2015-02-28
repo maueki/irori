@@ -1,6 +1,6 @@
 {% extends "navbar.html" %}
 
-{% block title %}{{page.Article.Title}}{% endblock %}
+{% block title %}Create New Page{% endblock %}
 
 {% block posthead_main %}
 <link href="/assets/css/editor.css" rel="stylesheet">
@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-<form ng-submit="pageCtrl.updatePage()"  ng-controller="PageUpdateCtrl as pageCtrl" ng-init="pageCtrl.load('{{page.Id.Hex()}}')">
+<form ng-submit="pageCtrl.addPage()"  ng-controller="PageCreateCtrl as pageCtrl">
   <!-- sidebar -->
   <div class="col-xs-2">
     <nav class="sidebar">
@@ -17,7 +17,7 @@
         <ul class="project-list">
           {% for proj in projects %}
           <li>
-          <a href="#" class="project-list-item {% if proj.Id in page.Projects %}selected{% endif %}">
+          <a href="#" class="project-list-item">
             <input style="display:none" type="checkbox" name="projects" value="{{proj.Id.Hex()}}">
             <span>{{proj.Name}}</span>
           </a>
