@@ -5,7 +5,7 @@ import (
 	"net/http/cookiejar"
 	"net/http/httptest"
 	"net/url"
-	"regexp"
+//	"regexp"
 	"testing"
 
 	"github.com/zenazn/goji"
@@ -75,8 +75,8 @@ func TestTransition(t *testing.T) {
 	}
 
 	// case: login failed
-	res, err = client.PostForm(s.URL+"/login",
-		url.Values{"username": {"test"}, "password": {"tes"}})
+	res, err = client.PostForm(s.URL + "/login",
+		url.Values{"username": {"test"}, "password": {"tes"},})
 	if res.StatusCode != http.StatusUnauthorized {
 		t.Error("POST /login unexpected status code (expected 401): ", res.StatusCode)
 	}
@@ -94,6 +94,7 @@ func TestTransition(t *testing.T) {
 		t.Error("GET / unexpected redirect URL: ", res.Request.URL.String())
 	}
 
+	/*
 	res, err = client.Get(s.URL + "/action/createNewPage")
 	if _, err = regexp.MatchString(`/wiki/[0-9a-f]{24}/edit`, res.Request.URL.String()); err != nil {
 		t.Error("Get /action/createNewPage unexpected redirect URL: ", res.Request.URL.String())
@@ -113,5 +114,6 @@ func TestTransition(t *testing.T) {
 	if res.Request.URL.String() != pageurl {
 		t.Error("POST /wiki/<pageid> unexpected redirect URL: ", res.Request.URL.String())
 	}
+*/
 
 }
