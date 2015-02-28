@@ -28,7 +28,7 @@ var store = sessions.NewCookieStore([]byte("something-very-secret")) // FIXME
 type Page struct {
 	Id       bson.ObjectId `bson:"_id"`
 	Article  Article
-	History  []History
+	History  []History `json:"-"`
 	Projects []bson.ObjectId
 }
 
@@ -121,7 +121,7 @@ func (p *Page) save(c web.C, r *http.Request) error {
 
 	wikidb := getWikiDb(c)
 
-	return wikidb.Db.C("page").UpdateId(p.Id,
+	return wikidb.Db.C("pages").UpdateId(p.Id,
 		bson.M{"$set": bson.M{"article": p.Article, "projects": p.Projects},
 			"$push": bson.M{"history": history}})
 }
@@ -136,7 +136,7 @@ func getPageFromDb(c web.C, pageId string) (*Page, error) {
 	id := bson.ObjectIdHex(pageId)
 
 	p := Page{}
-	err := wikidb.Db.C("page").FindId(id).One(&p)
+	err := wikidb.Db.C("pages").FindId(id).One(&p)
 	if err != nil {
 		fmt.Printf("getPageFromDb failed : %s\n", pageId)
 		return nil, err
@@ -174,24 +174,25 @@ func getSessionUser(c web.C) *User {
 }
 
 func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	wikidb := getWikiDb(c)
-
 	user := getSessionUser(c)
 
-	p := &Page{
-		Id: bson.NewObjectId(),
-		Article: Article{Title: "", Body: "", Date: time.Now(), UserId: user.Id}}
+	wikidb := getWikiDb(c)
+	projects := []Project{}
 
-	fmt.Println(p.Id.Hex())
-	err := wikidb.Db.C("page").Insert(p)
+	err := wikidb.Db.C("projects").Find(bson.M{}).All(&projects)
 	if err != nil {
-		log.Fatalln("createNewPage:", err)
+		log.Fatal("@@@ projects")
 	}
-	pageId := p.Id.Hex()
 
-	fmt.Printf("createNewPage pageId_str : %s\n", pageId)
+	err = executeWriterFromFile(w, "view/newpage.html",
+		&pongo2.Context{
+			"isEditor": user.HasPermission(EDITOR),
+			"projects": projects,
+		})
 
-	http.Redirect(w, r, "/wiki/"+pageId+"/edit", http.StatusFound)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func viewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -560,8 +561,11 @@ func setRoute(db *mgo.Database) {
 
 	apiMux := web.New()
 	apiMux.Use(needLogin)
-	apiMux.Get("/api/projects.json", apiProjectsGetHandler)
-	apiMux.Post("/api/projects.json", apiProjectsPostHandler)
+	apiMux.Get("/api/projects", apiProjectsGetHandler)
+	apiMux.Post("/api/projects", apiProjectsPostHandler)
+	apiMux.Get("/api/pages/:pageId", apiPageGetHandler)
+	apiMux.Post("/api/pages/:pageId", apiPageUpdateHandler)
+	apiMux.Post("/api/pages", apiPageCreateHandler)
 
 	// Mux : create new page or show a page created already
 	pageMux := web.New()
