@@ -13,6 +13,91 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+type Group struct {
+	Id     bson.ObjectId `bson:"_id,omitempty" json:"id,omitempty"`
+	Name   string
+	UserId []bson.ObjectId
+}
+
+func groupsGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	executeWriterFromFile(w, "view/groups.html", &pongo2.Context{})
+}
+
+func apiGroupGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	wikidb := getWikiDb(c)
+
+	groups := []Group{}
+
+	err := wikidb.Db.C("groups").Find(bson.M{}).All(&groups)
+	if err != nil {
+		log.Fatal("!!!!! get groups")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	js, err := json.Marshal(groups)
+
+	if err != nil {
+		log.Fatal("!!!!! json.Marshal")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
+func apiGroupCreateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	wikidb := getWikiDb(c)
+
+	defer r.Body.Close()
+	var group Group
+	if err := json.NewDecoder(r.Body).Decode(&group); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// TODO: verify incomming
+
+	changeinfo, err := wikidb.Db.C("groups").Upsert(bson.M{"name": group.Name},
+		bson.M{"$setOnInsert": group})
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if changeinfo.UpsertedId == nil {
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func apiGroupUpdateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	wikidb := getWikiDb(c)
+
+	defer r.Body.Close()
+	var group Group
+	if err := json.NewDecoder(r.Body).Decode(&group); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// TODO: verify incomming
+
+	err := wikidb.Db.C("groups").UpdateId(group.Id, group)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	js, _ := json.Marshal(group)
+	w.Write(js)
+}
+
 func projectsGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	wikidb := getWikiDb(c)
 

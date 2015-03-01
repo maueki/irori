@@ -70,3 +70,18 @@ app.directive 'pageEditor', () ->
         timer = setTimeout scope.sendText, 2000
   }
 
+app.factory 'Group', [
+  '$resource', ($resource) ->
+    $resource '/api/groups/:groupId', {Id: '@Id'}, {
+    }]
+
+app.controller 'GroupCtrl', [
+  'Group', '$scope', (Group, $scope) ->
+    $scope.groups = Group.query()
+    $scope.group = new Group( Name: "")
+    this.addGroup = () ->
+      console.log('add group: ', $scope.group)
+      $scope.group.$save ()->
+        $scope.group.Name = ''
+        $scope.groups = Group.query()
+  ]

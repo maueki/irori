@@ -25,11 +25,21 @@ const SESSION_NAME = "go_wiki_session"
 
 var store = sessions.NewCookieStore([]byte("something-very-secret")) // FIXME
 
+type AccessLevel string
+
+const (
+	PUBLIC  AccessLevel = "public"
+	GROUP   AccessLevel = "group"
+	PRIVATE AccessLevel = "private"
+)
+
 type Page struct {
 	Id       bson.ObjectId `bson:"_id"`
 	Article  Article
 	History  []History `json:"-"`
 	Projects []bson.ObjectId
+	Access   AccessLevel
+	Groups   []bson.ObjectId
 }
 
 type Article struct {
@@ -506,6 +516,7 @@ func needAdmin(c *web.C, h http.Handler) http.Handler {
 func addTestData(db *mgo.Database) {
 	db.C("user").RemoveAll(nil)     // FIXME
 	db.C("projects").RemoveAll(nil) // FIXME
+	db.C("groups").RemoveAll(nil)   // FIXME
 
 	guestHash, _ := bcrypt.GenerateFromPassword([]byte("guest"), bcrypt.DefaultCost)
 	user := &User{
@@ -558,6 +569,7 @@ func setRoute(db *mgo.Database) {
 	adminMux.Get("/admin/adduser", addUserGetHandler)
 	adminMux.Post("/admin/adduser", addUserPostHandler)
 	adminMux.Get("/admin/projects", projectsGetHandler)
+	adminMux.Get("/admin/groups", groupsGetHandler)
 
 	apiMux := web.New()
 	apiMux.Use(needLogin)
@@ -566,6 +578,9 @@ func setRoute(db *mgo.Database) {
 	apiMux.Get("/api/pages/:pageId", apiPageGetHandler)
 	apiMux.Post("/api/pages/:pageId", apiPageUpdateHandler)
 	apiMux.Post("/api/pages", apiPageCreateHandler)
+	apiMux.Post("/api/groups", apiGroupCreateHandler)
+	apiMux.Post("/api/groups/:groupId", apiGroupUpdateHandler)
+	apiMux.Get("/api/groups", apiGroupGetHandler)
 
 	// Mux : create new page or show a page created already
 	pageMux := web.New()
