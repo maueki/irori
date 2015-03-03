@@ -5,7 +5,7 @@ import (
 	"net/http/cookiejar"
 	"net/http/httptest"
 	"net/url"
-//	"regexp"
+	//	"regexp"
 	"testing"
 
 	"github.com/zenazn/goji"
@@ -24,7 +24,7 @@ func createUser(t *testing.T, db *mgo.Database) {
 		Permissions: map[Permission]bool{EDITOR: true},
 	}
 
-	err := db.C("user").Insert(user)
+	err := db.C("users").Insert(user)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,8 +75,8 @@ func TestTransition(t *testing.T) {
 	}
 
 	// case: login failed
-	res, err = client.PostForm(s.URL + "/login",
-		url.Values{"username": {"test"}, "password": {"tes"},})
+	res, err = client.PostForm(s.URL+"/login",
+		url.Values{"username": {"test"}, "password": {"tes"}})
 	if res.StatusCode != http.StatusUnauthorized {
 		t.Error("POST /login unexpected status code (expected 401): ", res.StatusCode)
 	}
@@ -95,25 +95,25 @@ func TestTransition(t *testing.T) {
 	}
 
 	/*
-	res, err = client.Get(s.URL + "/action/createNewPage")
-	if _, err = regexp.MatchString(`/wiki/[0-9a-f]{24}/edit`, res.Request.URL.String()); err != nil {
-		t.Error("Get /action/createNewPage unexpected redirect URL: ", res.Request.URL.String())
-		return
-	}
+		res, err = client.Get(s.URL + "/action/createNewPage")
+		if _, err = regexp.MatchString(`/wiki/[0-9a-f]{24}/edit`, res.Request.URL.String()); err != nil {
+			t.Error("Get /action/createNewPage unexpected redirect URL: ", res.Request.URL.String())
+			return
+		}
 
-	re := regexp.MustCompile(`/wiki/([0-9a-f]{24})/`)
-	group := re.FindSubmatch([]byte(res.Request.URL.String()))
-	pageurl := s.URL + "/wiki/" + string(group[1])
-	res, err = client.PostForm(pageurl,
-		url.Values{"title": {"test title"}, "body": {"test body"}})
+		re := regexp.MustCompile(`/wiki/([0-9a-f]{24})/`)
+		group := re.FindSubmatch([]byte(res.Request.URL.String()))
+		pageurl := s.URL + "/wiki/" + string(group[1])
+		res, err = client.PostForm(pageurl,
+			url.Values{"title": {"test title"}, "body": {"test body"}})
 
-	if res.StatusCode != http.StatusOK {
-		t.Error("POST /wiki/<pageid> unexpected status code: ", res.StatusCode)
-	}
+		if res.StatusCode != http.StatusOK {
+			t.Error("POST /wiki/<pageid> unexpected status code: ", res.StatusCode)
+		}
 
-	if res.Request.URL.String() != pageurl {
-		t.Error("POST /wiki/<pageid> unexpected redirect URL: ", res.Request.URL.String())
-	}
-*/
+		if res.Request.URL.String() != pageurl {
+			t.Error("POST /wiki/<pageid> unexpected redirect URL: ", res.Request.URL.String())
+		}
+	*/
 
 }

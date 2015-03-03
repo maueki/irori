@@ -70,9 +70,15 @@ app.directive 'pageEditor', () ->
         timer = setTimeout scope.sendText, 2000
   }
 
+app.factory 'User', [
+  '$resource', ($resource) ->
+    $resource '/api/users/:userId', {Id: '@userId'}, {
+    }]
+
 app.factory 'Group', [
   '$resource', ($resource) ->
-    $resource '/api/groups/:groupId', {Id: '@Id'}, {
+    $resource '/api/groups/:groupId', {groupId: '@id'}, {
+      update: {method: 'PUT'}
     }]
 
 app.controller 'GroupCtrl', [
@@ -84,4 +90,23 @@ app.controller 'GroupCtrl', [
       $scope.group.$save ()->
         $scope.group.Name = ''
         $scope.groups = Group.query()
+  ]
+
+app.controller 'EditGroupCtrl', [
+  'Group', 'User', '$window', '$scope', (Group, User, $window, $scope) ->
+    this.load = (id) ->
+      $scope.group = Group.get({'groupId': id})
+
+      User.query().$promise.then (users) ->
+        $scope.users = ( {
+          Id : user.Id
+          Name : user.Name
+          enabled : user.Id in $scope.group.Users
+        } for user in users )
+
+    this.submit = () ->
+      console.log $scope.group.Name
+      $scope.group.Users = ( user.Id for user in $scope.users when user.enabled)
+      $scope.group.$update().then () ->
+        $window.location.href = '/admin/groups'
   ]

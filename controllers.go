@@ -10,20 +10,21 @@ import (
 	_ "github.com/flosch/pongo2-addons"
 	"github.com/zenazn/goji/web"
 
+	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
 type Group struct {
-	Id     bson.ObjectId `bson:"_id,omitempty" json:"id,omitempty"`
-	Name   string
-	UserId []bson.ObjectId
+	Id    bson.ObjectId `bson:"_id,omitempty" json:"id,omitempty"`
+	Name  string
+	Users []bson.ObjectId
 }
 
 func groupsGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	executeWriterFromFile(w, "view/groups.html", &pongo2.Context{})
 }
 
-func apiGroupGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+func apiGroupListGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	wikidb := getWikiDb(c)
 
 	groups := []Group{}
@@ -43,6 +44,32 @@ func apiGroupGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
+func apiGroupGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	gid := bson.ObjectIdHex(c.URLParams["groupId"])
+
+	if !gid.Valid() {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	wikidb := getWikiDb(c)
+
+	var group Group
+	err := wikidb.Db.C("groups").FindId(gid).One(&group)
+	if err == mgo.ErrNotFound {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	} else if err != nil {
+		log.Fatal(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	js, _ := json.Marshal(group)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
 }
@@ -75,8 +102,10 @@ func apiGroupCreateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func apiGroupUpdateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+func apiGroupPutHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	wikidb := getWikiDb(c)
+
+	groupId := bson.ObjectIdHex(c.URLParams["groupId"])
 
 	defer r.Body.Close()
 	var group Group
@@ -87,7 +116,7 @@ func apiGroupUpdateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	// TODO: verify incomming
 
-	err := wikidb.Db.C("groups").UpdateId(group.Id, group)
+	err := wikidb.Db.C("groups").UpdateId(groupId, group)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -96,6 +125,19 @@ func apiGroupUpdateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	js, _ := json.Marshal(group)
 	w.Write(js)
+}
+
+func groupEditHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	groupId := c.URLParams["groupId"]
+
+	objid := bson.ObjectIdHex(groupId)
+	if !objid.Valid() {
+		log.Println("invalid groupId:", groupId)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	executeWriterFromFile(w, "view/edit-group.html", &pongo2.Context{"groupid": groupId})
 }
 
 func projectsGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -226,6 +268,26 @@ func apiPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 
 	js, _ := json.Marshal(page)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
+func apiUserListGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	wikidb := getWikiDb(c)
+
+	users := []User{}
+
+	err := wikidb.Db.C("users").Find(bson.M{}).All(&users)
+	if err != nil {
+		log.Fatal("@@@ users")
+	}
+
+	js, err := json.Marshal(users)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
