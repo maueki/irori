@@ -1,21 +1,16 @@
 notifications:
-    email: false
-    slack: itage:bcU8Wypogj7TqOJv0y7mCk1j
-
+  email: false
+  slack:
+    secure: ZmvaHk88WOK9Y1H8KV30VHaYoak5b6K/S8Bw3sC6+2BoII8DGKi1A/mTyxeNb21N7tmBa7x0TgQpPLqe8yS2HbVp+wSdALVnkLa553/j/XzD9IQpXB6U8DCjOGMiqJjTp2BKjicUarK8fYLPp9hM0gHNzi0sbqNNuNz2yTLP5Cw=
 cache:
-    - apt: true
-
+- apt: true
 language: go
-
 before_install:
-    - sudo apt-get install -y coffeescript
-
+- sudo apt-get install -y coffeescript
 script:
-    - make -j4
-    - make test
-
+- make -j4
+- make test
 go:
-    - 1.4
-
+- 1.4
 services:
-    - mongodb
+- mongodb
