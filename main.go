@@ -231,10 +231,15 @@ func viewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
+	// time.location
+	jst := time.FixedZone("Asia/Tokyo", 9*60*60)
+	edittime := page.Article.Date.In(jst)
+
 	// genarate html
 	pongoCtx := pongo2.Context{
 		"loginuser":  user,
 		"page":       page,
+		"edittime":   edittime.Format("2006/01/02 15:04"),
 		"editeduser": editeduser}
 
 	err = executeWriterFromFile(w, "view/view.html", &pongoCtx)
