@@ -1,0 +1,37 @@
+{% extends "navbar.html" %}
+
+{% block content %}
+<div class="container" ng-controller="GroupCtrl as groupCtrl">
+  <h1>Groups</h1>
+
+  <div class="row">
+    <div class="col-xs-5">
+      <form ng-submit="groupCtrl.addGroup()" name="addGroup" class="form-inline">
+        <div class="form-group">
+          <input class="form-control" name="" type="text" ng-model="group.Name" placeholder="Group Name"/>
+          <input type="submit" value="Add Group" class="btn btn-primary"/>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-xs-12">
+      <table class="table group-table" ng-show="groups">
+        <thead>
+          <tr>
+            <th></th>
+            <th> Name </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr ng-repeat="group in groups">
+            <td></td>
+            <td><a href="/admin/groups/{$ group.id $}">{$ group.Name $}</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

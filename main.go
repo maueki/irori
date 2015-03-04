@@ -25,11 +25,21 @@ const SESSION_NAME = "go_wiki_session"
 
 var store = sessions.NewCookieStore([]byte("something-very-secret")) // FIXME
 
+type AccessLevel string
+
+const (
+	PUBLIC  AccessLevel = "public"
+	GROUP   AccessLevel = "group"
+	PRIVATE AccessLevel = "private"
+)
+
 type Page struct {
 	Id       bson.ObjectId `bson:"_id"`
 	Article  Article
 	History  []History `json:"-"`
 	Projects []bson.ObjectId
+	Access   AccessLevel
+	Groups   []bson.ObjectId
 }
 
 type Article struct {
@@ -149,7 +159,7 @@ func getPageFromDb(c web.C, pageId string) (*Page, error) {
 
 func getUserById(db *mgo.Database, id bson.ObjectId) (*User, error) {
 	user := User{}
-	err := db.C("user").FindId(id).One(&user)
+	err := db.C("users").FindId(id).One(&user)
 	return &user, err
 }
 
@@ -338,7 +348,7 @@ func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 
 	user := User{}
-	err := wikidb.Db.C("user").Find(bson.M{"name": name}).One(&user)
+	err := wikidb.Db.C("users").Find(bson.M{"name": name}).One(&user)
 	if err == nil {
 		err = bcrypt.CompareHashAndPassword(user.Password, []byte(password))
 		if err == nil {
@@ -417,7 +427,7 @@ func addUserPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Register user only if not found.
-	changeinfo, err := wikidb.Db.C("user").Upsert(bson.M{"name": name},
+	changeinfo, err := wikidb.Db.C("users").Upsert(bson.M{"name": name},
 		bson.M{"$setOnInsert": user})
 	if err != nil {
 		log.Println(err)
@@ -504,8 +514,9 @@ func needAdmin(c *web.C, h http.Handler) http.Handler {
 }
 
 func addTestData(db *mgo.Database) {
-	db.C("user").RemoveAll(nil)     // FIXME
+	db.C("users").RemoveAll(nil)    // FIXME
 	db.C("projects").RemoveAll(nil) // FIXME
+	db.C("groups").RemoveAll(nil)   // FIXME
 
 	guestHash, _ := bcrypt.GenerateFromPassword([]byte("guest"), bcrypt.DefaultCost)
 	user := &User{
@@ -513,18 +524,18 @@ func addTestData(db *mgo.Database) {
 		Password: guestHash,
 	}
 
-	err := db.C("user").Insert(user)
+	err := db.C("users").Insert(user)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	admin := &User{
-		Name: "admin",
-		Password: []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
+		Name:        "admin",
+		Password:    []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
 		Permissions: map[Permission]bool{ADMIN: true, EDITOR: true},
 	}
 
-	err = db.C("user").Insert(admin)
+	err = db.C("users").Insert(admin)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -558,14 +569,24 @@ func setRoute(db *mgo.Database) {
 	adminMux.Get("/admin/adduser", addUserGetHandler)
 	adminMux.Post("/admin/adduser", addUserPostHandler)
 	adminMux.Get("/admin/projects", projectsGetHandler)
+	adminMux.Get("/admin/groups", groupsGetHandler)
+	adminMux.Get("/admin/groups/:groupId", groupEditHandler)
 
 	apiMux := web.New()
 	apiMux.Use(needLogin)
 	apiMux.Get("/api/projects", apiProjectsGetHandler)
 	apiMux.Post("/api/projects", apiProjectsPostHandler)
+
 	apiMux.Get("/api/pages/:pageId", apiPageGetHandler)
 	apiMux.Post("/api/pages/:pageId", apiPageUpdateHandler)
 	apiMux.Post("/api/pages", apiPageCreateHandler)
+
+	apiMux.Post("/api/groups", apiGroupCreateHandler)
+	apiMux.Get("/api/groups/:groupId", apiGroupGetHandler)
+	apiMux.Put("/api/groups/:groupId", apiGroupPutHandler)
+	apiMux.Get("/api/groups", apiGroupListGetHandler)
+
+	apiMux.Get("/api/users", apiUserListGetHandler)
 
 	// Mux : create new page or show a page created already
 	pageMux := web.New()
