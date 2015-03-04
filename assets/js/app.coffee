@@ -43,9 +43,10 @@ app.controller 'PageCreateCtrl', [
   ]
 
 app.controller 'PageUpdateCtrl', [
-  'Page', 'Group', '$window', '$scope', (Page, Group, $window, $scope) ->
+  'Page', 'Project', 'Group', '$window', '$scope', (Page, Project, Group, $window, $scope) ->
     $scope.groups = Group.query()
-
+    $scope.projects = Project.query()
+    
     this.updatePage = () ->
       page = new Page($scope.page)
       page.$save().then (res) ->
@@ -87,9 +88,6 @@ app.directive 'pageSidebar', () ->
   {
     restrict: 'E'
     templateUrl: '/assets/html/page-sidebar.html'
-    controller: ['Group', '$scope', (Group, $scope) ->
-      ]
-    link: ($scope, element) ->
   }
 
 app.factory 'User', [
