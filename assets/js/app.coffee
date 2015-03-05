@@ -131,3 +131,11 @@ app.controller 'EditGroupCtrl', [
       $scope.group.$update().then () ->
         $window.location.href = '/admin/groups'
   ]
+
+app.controller 'UsersCtrl', [
+  'User', '$scope', '$window', (User, $scope, $window) ->
+    $scope.users = User.query()
+    this.addUser = () ->
+      $scope.user.$save().then (res) ->
+        $window.location.href = '/admin/users'
+  ]

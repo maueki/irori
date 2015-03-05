@@ -66,11 +66,12 @@ const (
 )
 
 type User struct {
-	Id          bson.ObjectId `bson:"_id,omitempty"`
-	Name        string
-	Password    []byte
-	Permissions map[Permission]bool
-	Projects    map[bson.ObjectId]bool
+	Id          bson.ObjectId          `bson:"_id,omitempty" json:"id"`
+	Name        string                 `json:"name"`
+	EMail       string                 `json:"email"`
+	Password    []byte                 `json:"-"`
+	Permissions map[Permission]bool    `json:"permissions"`
+	Projects    map[bson.ObjectId]bool `json:"projects"`
 }
 
 type Project struct {
@@ -571,6 +572,7 @@ func setRoute(db *mgo.Database) {
 	adminMux.Get("/admin/projects", projectsGetHandler)
 	adminMux.Get("/admin/groups", groupsGetHandler)
 	adminMux.Get("/admin/groups/:groupId", groupEditHandler)
+	adminMux.Get("/admin/users", userListHandler)
 
 	apiMux := web.New()
 	apiMux.Use(needLogin)
@@ -587,6 +589,7 @@ func setRoute(db *mgo.Database) {
 	apiMux.Get("/api/groups", apiGroupListGetHandler)
 
 	apiMux.Get("/api/users", apiUserListGetHandler)
+	apiMux.Post("/api/users", apiUserPostHandler)
 
 	// Mux : create new page or show a page created already
 	pageMux := web.New()

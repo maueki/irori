@@ -292,3 +292,62 @@ func apiUserListGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
 }
+
+type postedUser struct {
+	name     string
+	email    string
+	password string
+}
+
+func apiUserPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	var u postedUser
+	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if u.email == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	user := &User{
+		Name:        u.name,
+		EMail:       u.email,
+		Password:    HashPassword(u.password),
+		Permissions: map[Permission]bool{EDITOR: true}, //FIXME
+	}
+
+	wikidb := getWikiDb(c)
+	// Register user only if user.Email not found.
+	changeinfo, err := wikidb.Db.C("users").Upsert(bson.M{"email": user.EMail},
+		bson.M{"$setOnInsert": user})
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if changeinfo.UpsertedId == nil {
+		log.Println("user.email already exists:", user.EMail)
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func userListHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	wikidb := getWikiDb(c)
+
+	users := []User{}
+
+	err := wikidb.Db.C("users").Find(bson.M{}).All(&users)
+	if err != nil {
+		log.Fatal("!!!! find users", err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+
+	executeWriterFromFile(w, "view/users.html", &pongo2.Context{})
+}
