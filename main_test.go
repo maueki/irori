@@ -1,5 +1,8 @@
 package main
 
+import "testing"
+
+/*
 import (
 	"net/http"
 	"net/http/cookiejar"
@@ -15,7 +18,9 @@ import (
 
 	"code.google.com/p/go.crypto/bcrypt"
 )
+*/
 
+/*
 func createUser(t *testing.T, db *mgo.Database) {
 	hash, _ := bcrypt.GenerateFromPassword([]byte("test"), bcrypt.DefaultCost)
 	user := &User{
@@ -29,6 +34,7 @@ func createUser(t *testing.T, db *mgo.Database) {
 		t.Fatal(err)
 	}
 }
+*/
 
 func TestTransition(t *testing.T) {
 	/*
