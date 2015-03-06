@@ -3,29 +3,21 @@
 {% block content %}
 
 <div class="container" ng-controller="EditGroupCtrl as ctrl" ng-init="ctrl.load('{{ groupid }}')">
-  <form class="form-inline" ng-submit="ctrl.submit()">
-    <h1>Group "{$ group.Name $}"</h1>
-    <div class="row">
-      <div class="col-xs-5">
-        <div class="form-group">
-          <label for="groupname">Group Name</label>
-          <input class="form-control" id="groupname" type="text" ng-model="group.Name"/>
-        </div>
+  <div class="col-sm-offset-3 col-sm-6">
+    <form ng-submit="ctrl.submit()">
+      <h1>Group "{$ group.Name $}"</h1>
+      <div class="form-group">
+        <label for="groupname">Group Name</label>
+        <input class="form-control" id="groupname" type="text" ng-model="group.Name"/>
       </div>
-    </div>
 
-    <h2>members</h2>
-    <div class="row">
-      <ul ng-repeat="user in users">
-        <li>
-          <input type="checkbox" ng-model="user.enabled">{$ user.Name $}</input>
-        </li>
-      </ul>
-    </div>
-    <div class="row">
+      <h2>members</h2>
+      <div ng-repeat="user in users">
+        <input type="checkbox" ng-model="user.enabled">{$ user.name $}</input>
+      </div>
       <button type="submit" class="btn btn-primary pull-left">Save</button>
-    </div>
-  </form>
+    </form>
+  </div>
 </div>
 
 {% endblock %}

@@ -120,14 +120,14 @@ app.controller 'EditGroupCtrl', [
 
       User.query().$promise.then (users) ->
         $scope.users = ( {
-          Id : user.Id
-          Name : user.Name
-          enabled : user.Id in $scope.group.Users
+          id : user.id
+          name : user.name
+          enabled : user.id in $scope.group.Users
         } for user in users )
 
     this.submit = () ->
       console.log $scope.group.Name
-      $scope.group.Users = ( user.Id for user in $scope.users when user.enabled)
+      $scope.group.Users = ( user.id for user in $scope.users when user.enabled)
       $scope.group.$update().then () ->
         $window.location.href = '/admin/groups'
   ]
