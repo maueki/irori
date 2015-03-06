@@ -1,21 +1,31 @@
-{% extends "base.html" %}
+{% extends "navbar.html" %}
 
-{% block title %} Sign in {% endblock %}
+{% block title %} Add User {% endblock %}
 
-{% block posthead_main %}
-<link href="/assets/css/login.css" rel="stylesheet">
-{% endblock %}
+{% block content %}
+<div class="container" ng-controller="UserAddCtrl as userCtrl">
+  <div class="col-sm-offset-3 col-sm-6">
+    <form accept-charset="ascii" ng-submit="userCtrl.addUser()">
+      <h2> Add User </h2>
+      <div class="form-group">
+        <label for="name">User Name</label>
+        <input name="" type="text" class="form-control" id="name" placeholder="Name" ng-model="user.name"/>
+      </div>
+      <div class="form-group">
+        <label for="email">E-Mail</label>
+        <input name="" type="email" class="form-control" id="email" placeholder="E-Mail" ng-model="user.email"/>
+      </div>
 
-{% block body %}
-<div class="container">
-  <form class="form-signin" accept-charset="ascii" action="/admin/adduser" method="POST">
-    <h2 class="form-signin-heading"> Add User </h2>
-    <div class="form-signin-heading" data-alert-type="danger" data-alert-value='{{ error }}'> </div>
-    <label for="signup_field" class="sr-only">Username</label>
-    <input autocorrect="off" name="username" id="signup_field" type="text" class="form-control" required autofocus>
-    <label for="password" class="sr-only">Password</label>
-    <input name="password" id="password" type="password" class="form-control"  required autofocus>
-    <input class="btn btn-lg btn-primary btn-block" type="submit" value="Singup">
-  </form>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input name="" type="password" class="form-control" id="password" placeholder="Password" ng-model="user.password"/>
+        <input name="" type="password" class="form-control" value="" id="confirm" placeholder="Password Confirmation"/>
+      </div>
+
+      <div class="form-group">
+        <input class="btn btn-primary" type="submit" value="Register">
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}

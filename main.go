@@ -416,35 +416,6 @@ func addUserGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func addUserPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	wikidb := getWikiDb(c)
-	name := r.FormValue("username")
-	password := r.FormValue("password")
-
-	user := &User{
-		Name:        name,
-		Password:    HashPassword(password),
-		Permissions: map[Permission]bool{EDITOR: true},
-	}
-
-	// Register user only if not found.
-	changeinfo, err := wikidb.Db.C("users").Upsert(bson.M{"name": name},
-		bson.M{"$setOnInsert": user})
-	if err != nil {
-		log.Println(err)
-		executeWriterFromFile(w, "view/adduser.html", &pongo2.Context{"error": "Incorrect, please try again."})
-		return
-	}
-
-	if changeinfo.UpsertedId == nil {
-		log.Println("user.Name already exists:", name)
-		executeWriterFromFile(w, "view/adduser.html", &pongo2.Context{"error": "Incorrect, please try again."})
-		return
-	}
-
-	http.Redirect(w, r, "/wiki", http.StatusFound)
-}
-
 func includeDb(db *mgo.Database) func(c *web.C, h http.Handler) http.Handler {
 	wikidb := &WikiDb{
 		Db: db,
@@ -531,8 +502,8 @@ func addTestData(db *mgo.Database) {
 	}
 
 	admin := &User{
-		Name:        "admin",
-		Password:    []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
+		Name: "admin",
+		Password: []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
 		Permissions: map[Permission]bool{ADMIN: true, EDITOR: true},
 	}
 
@@ -568,7 +539,6 @@ func setRoute(db *mgo.Database) {
 	adminMux.Use(needLogin)
 	adminMux.Use(needAdmin)
 	adminMux.Get("/admin/adduser", addUserGetHandler)
-	adminMux.Post("/admin/adduser", addUserPostHandler)
 	adminMux.Get("/admin/projects", projectsGetHandler)
 	adminMux.Get("/admin/groups", groupsGetHandler)
 	adminMux.Get("/admin/groups/:groupId", groupEditHandler)

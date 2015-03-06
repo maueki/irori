@@ -294,9 +294,9 @@ func apiUserListGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 type postedUser struct {
-	name     string
-	email    string
-	password string
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 func apiUserPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -307,15 +307,23 @@ func apiUserPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if u.email == "" {
+	// FIXME: veirfy
+	if len(u.Name) < 4 || u.Email == "" {
+		log.Println("user is imcomplete, ", u)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if len(u.Password) < 8 {
+		log.Println("password is too short.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	user := &User{
-		Name:        u.name,
-		EMail:       u.email,
-		Password:    HashPassword(u.password),
+		Name:        u.Name,
+		EMail:       u.Email,
+		Password:    HashPassword(u.Password),
 		Permissions: map[Permission]bool{EDITOR: true}, //FIXME
 	}
 
