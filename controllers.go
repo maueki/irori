@@ -278,19 +278,50 @@ func apiUserListGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	users := []User{}
 
-	err := wikidb.Db.C("users").Find(bson.M{}).All(&users)
+	err := wikidb.Db.C("users").Find(bson.M{"$or": []interface{}{
+		bson.M{"disabled": bson.M{"$exists": false}},
+		bson.M{"disabled": false}}}).All(&users)
+
 	if err != nil {
-		log.Fatal("@@@ users")
+		log.Println("apiUserListGetHandler: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	js, err := json.Marshal(users)
 	if err != nil {
+		log.Println("apiUserListGetHandler: ", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
+}
+
+func apiUserDeleteHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	uid := bson.ObjectIdHex(c.URLParams["userId"])
+	if !uid.Valid() {
+		log.Println("uid invalid: ", uid)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	wikidb := getWikiDb(c)
+
+	err := wikidb.Db.C("users").UpdateId(uid, bson.M{"disabled": true})
+	if err == mgo.ErrNotFound {
+		log.Println("user not found: ", uid)
+		w.WriteHeader(http.StatusNotFound)
+		return
+	} else if err != nil {
+		log.Println("user delete failed: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
+	return
 }
 
 type postedUser struct {
@@ -325,6 +356,7 @@ func apiUserPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		EMail:       u.Email,
 		Password:    HashPassword(u.Password),
 		Permissions: map[Permission]bool{EDITOR: true}, //FIXME
+		Disabled:    false,
 	}
 
 	wikidb := getWikiDb(c)

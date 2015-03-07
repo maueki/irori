@@ -72,6 +72,7 @@ type User struct {
 	Password    []byte                 `json:"-"`
 	Permissions map[Permission]bool    `json:"permissions"`
 	Projects    map[bson.ObjectId]bool `json:"projects"`
+	Disabled    bool                   `json:"disabled"`
 }
 
 type Project struct {
@@ -502,8 +503,8 @@ func addTestData(db *mgo.Database) {
 	}
 
 	admin := &User{
-		Name: "admin",
-		Password: []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
+		Name:        "admin",
+		Password:    []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
 		Permissions: map[Permission]bool{ADMIN: true, EDITOR: true},
 	}
 
@@ -560,6 +561,7 @@ func setRoute(db *mgo.Database) {
 
 	apiMux.Get("/api/users", apiUserListGetHandler)
 	apiMux.Post("/api/users", apiUserPostHandler)
+	apiMux.Delete("/api/users/:userId", apiUserDeleteHandler)
 
 	// Mux : create new page or show a page created already
 	pageMux := web.New()
