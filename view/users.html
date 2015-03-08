@@ -12,12 +12,14 @@
           <tr>
             <th> Name </th>
             <th> E-Mail </th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
           <tr ng-repeat="user in users">
             <td> {$ user.name $} </td>
             <td> {$ user.email $}</td>
+            <td><button class="btn btn-default" ng-click="deleteUser(user.id)">delete</button></td>
           </tr>
         </tbody>
       </table>

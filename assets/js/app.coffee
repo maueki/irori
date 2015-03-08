@@ -135,6 +135,9 @@ app.controller 'EditGroupCtrl', [
 app.controller 'UsersCtrl', [
   'User', '$scope', '$window', (User, $scope, $window) ->
     $scope.users = User.query()
+    $scope.deleteUser = (id) ->
+      User.delete {userId: id}, (res) ->
+        $scope.users = User.query()
   ]
 
 app.controller 'UserAddCtrl', [
