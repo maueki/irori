@@ -1,0 +1,29 @@
+{% extends "navbar.html" %}
+
+{% block content %}
+<div class="container" ng-controller="UsersCtrl as usersCtrl">
+  <h1>Users</h1>
+
+  <a href="/admin/adduser" class="btn btn-default"><i class="fa fa-user-plus"></i>Add User</a>
+  <div class="row">
+    <div class="col-xs-12">
+      <table class="table users-table" ng-show="users">
+        <thead>
+          <tr>
+            <th> Name </th>
+            <th> E-Mail </th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr ng-repeat="user in users">
+            <td> {$ user.name $} </td>
+            <td> {$ user.email $}</td>
+            <td><button class="btn btn-default" ng-click="deleteUser(user.id)">delete</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

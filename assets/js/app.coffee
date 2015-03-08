@@ -43,9 +43,10 @@ app.controller 'PageCreateCtrl', [
   ]
 
 app.controller 'PageUpdateCtrl', [
-  'Page', 'Group', '$window', '$scope', (Page, Group, $window, $scope) ->
+  'Page', 'Project', 'Group', '$window', '$scope', (Page, Project, Group, $window, $scope) ->
     $scope.groups = Group.query()
-
+    $scope.projects = Project.query()
+    
     this.updatePage = () ->
       page = new Page($scope.page)
       page.$save().then (res) ->
@@ -87,9 +88,6 @@ app.directive 'pageSidebar', () ->
   {
     restrict: 'E'
     templateUrl: '/assets/html/page-sidebar.html'
-    controller: ['Group', '$scope', (Group, $scope) ->
-      ]
-    link: ($scope, element) ->
   }
 
 app.factory 'User', [
@@ -122,14 +120,31 @@ app.controller 'EditGroupCtrl', [
 
       User.query().$promise.then (users) ->
         $scope.users = ( {
-          Id : user.Id
-          Name : user.Name
-          enabled : user.Id in $scope.group.Users
+          id : user.id
+          name : user.name
+          enabled : user.id in $scope.group.Users
         } for user in users )
 
     this.submit = () ->
       console.log $scope.group.Name
-      $scope.group.Users = ( user.Id for user in $scope.users when user.enabled)
+      $scope.group.Users = ( user.id for user in $scope.users when user.enabled)
       $scope.group.$update().then () ->
         $window.location.href = '/admin/groups'
+  ]
+
+app.controller 'UsersCtrl', [
+  'User', '$scope', '$window', (User, $scope, $window) ->
+    $scope.users = User.query()
+    $scope.deleteUser = (id) ->
+      User.delete {userId: id}, (res) ->
+        $scope.users = User.query()
+  ]
+
+app.controller 'UserAddCtrl', [
+  'User', '$scope', '$window', (User, $scope, $window) ->
+    this.addUser = () ->
+      console.log $scope.user
+      user = new User($scope.user)
+      user.$save().then (res) ->
+        $window.location.href = '/admin/users'
   ]
