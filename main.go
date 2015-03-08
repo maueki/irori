@@ -33,16 +33,16 @@ const (
 	PRIVATE AccessLevel = "private"
 )
 
-type Page struct {
+type page struct {
 	Id       bson.ObjectId `bson:"_id"`
-	Article  Article
-	History  []History `json:"-"`
+	Article  article
+	History  []history `json:"-"`
 	Projects []bson.ObjectId
 	Access   AccessLevel
 	Groups   []bson.ObjectId
 }
 
-type Article struct {
+type article struct {
 	Id     bson.ObjectId `bson:"_id,omitempty"`
 	Title  string
 	Body   string
@@ -50,7 +50,7 @@ type Article struct {
 	Date   time.Time
 }
 
-type History struct {
+type history struct {
 	Id     bson.ObjectId `bson:"_id,omitempty"`
 	Title  []byte
 	Body   []byte
@@ -58,34 +58,34 @@ type History struct {
 	Date   time.Time
 }
 
-type Permission string
+type permission string
 
 const (
-	ADMIN  Permission = "admin"
-	EDITOR Permission = "editor"
+	ADMIN  permission = "admin"
+	EDITOR permission = "editor"
 )
 
-type User struct {
+type user struct {
 	Id          bson.ObjectId          `bson:"_id,omitempty" json:"id"`
 	Name        string                 `json:"name"`
 	EMail       string                 `json:"email"`
 	Password    []byte                 `json:"-"`
-	Permissions map[Permission]bool    `json:"permissions"`
+	Permissions map[permission]bool    `json:"permissions"`
 	Projects    map[bson.ObjectId]bool `json:"projects"`
 	Disabled    bool                   `json:"disabled"`
 }
 
-type Project struct {
+type project struct {
 	Id   bson.ObjectId `bson:"_id,omitempty" json:"id,omitempty"`
 	Name string
 }
 
-func (u *User) HasPermission(perm Permission) bool {
+func (u *user) HasPermission(perm permission) bool {
 	b, ok := u.Permissions[perm]
 	return ok && b
 }
 
-type WikiDb struct {
+type docdb struct {
 	Db *mgo.Database
 }
 
@@ -98,7 +98,7 @@ func decodeFromBlob(data []byte) (string, error) {
 	return string(data), error
 }
 
-func (a *Article) createHistoryData() (*History, error) {
+func (a *article) createHistoryData() (*history, error) {
 	title, err := encodeFromText(a.Title)
 	if err != nil {
 		return nil, err
@@ -109,7 +109,7 @@ func (a *Article) createHistoryData() (*History, error) {
 		return nil, err
 	}
 
-	history := History{}
+	history := history{}
 	history.Id = a.Id
 	history.Title = title
 	history.Body = body
@@ -119,7 +119,7 @@ func (a *Article) createHistoryData() (*History, error) {
 	return &history, nil
 }
 
-func (p *Page) save(c web.C, r *http.Request) error {
+func (p *page) save(c web.C, r *http.Request) error {
 	user := getSessionUser(c)
 
 	p.Article.Id = bson.NewObjectId()
@@ -131,15 +131,15 @@ func (p *Page) save(c web.C, r *http.Request) error {
 	p.Article.UserId = user.Id
 	p.Article.Date = time.Now()
 
-	wikidb := getWikiDb(c)
+	docdb := getDocDb(c)
 
-	return wikidb.Db.C("pages").UpdateId(p.Id,
+	return docdb.Db.C("pages").UpdateId(p.Id,
 		bson.M{"$set": bson.M{"article": p.Article, "projects": p.Projects},
 			"$push": bson.M{"history": history}})
 }
 
-func getPageFromDb(c web.C, pageId string) (*Page, error) {
-	wikidb := getWikiDb(c)
+func getPageFromDb(c web.C, pageId string) (*page, error) {
+	docdb := getDocDb(c)
 
 	if !bson.IsObjectIdHex(pageId) {
 		return nil, mgo.ErrNotFound
@@ -147,8 +147,8 @@ func getPageFromDb(c web.C, pageId string) (*Page, error) {
 
 	id := bson.ObjectIdHex(pageId)
 
-	p := Page{}
-	err := wikidb.Db.C("pages").FindId(id).One(&p)
+	p := page{}
+	err := docdb.Db.C("pages").FindId(id).One(&p)
 	if err != nil {
 		fmt.Printf("getPageFromDb failed : %s\n", pageId)
 		return nil, err
@@ -159,8 +159,8 @@ func getPageFromDb(c web.C, pageId string) (*Page, error) {
 	return &p, nil
 }
 
-func getUserById(db *mgo.Database, id bson.ObjectId) (*User, error) {
-	user := User{}
+func getUserById(db *mgo.Database, id bson.ObjectId) (*user, error) {
+	user := user{}
 	err := db.C("users").FindId(id).One(&user)
 	return &user, err
 }
@@ -171,27 +171,27 @@ func executeWriterFromFile(w http.ResponseWriter, path string, context *pongo2.C
 }
 
 // precond: must call after needLogin()
-func getSessionUser(c web.C) *User {
-	user, ok := c.Env["user"]
+func getSessionUser(c web.C) *user {
+	u, ok := c.Env["user"]
 	if !ok {
 		log.Fatalln("user not found")
 	}
 
-	u, ok := user.(*User)
+	retu, ok := u.(*user)
 	if !ok {
 		log.Fatalln("invalid user")
 	}
 
-	return u
+	return retu
 }
 
 func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	user := getSessionUser(c)
 
-	wikidb := getWikiDb(c)
-	projects := []Project{}
+	docdb := getDocDb(c)
+	projects := []project{}
 
-	err := wikidb.Db.C("projects").Find(bson.M{}).All(&projects)
+	err := docdb.Db.C("projects").Find(bson.M{}).All(&projects)
 	if err != nil {
 		log.Fatal("@@@ projects")
 	}
@@ -222,8 +222,8 @@ func viewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	user := getSessionUser(c)
 
 	// get last edited user info
-	wikidb := getWikiDb(c)
-	editeduser, err := getUserById(wikidb.Db, page.Article.UserId)
+	docdb := getDocDb(c)
+	editeduser, err := getUserById(docdb.Db, page.Article.UserId)
 	if err == mgo.ErrNotFound {
 		// TODO : when user is removed?
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -254,10 +254,10 @@ func editPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	user := getSessionUser(c)
 
-	wikidb := getWikiDb(c)
-	projects := []Project{}
+	docdb := getDocDb(c)
+	projects := []project{}
 
-	err = wikidb.Db.C("projects").Find(bson.M{}).All(&projects)
+	err = docdb.Db.C("projects").Find(bson.M{}).All(&projects)
 	if err != nil {
 		log.Fatal("@@@ projects")
 	}
@@ -315,7 +315,7 @@ func savePagePostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/wiki/"+pageId, http.StatusFound)
 }
 
-func getWikiDb(c web.C) *WikiDb { return c.Env["wikidb"].(*WikiDb) }
+func getDocDb(c web.C) *docdb { return c.Env["docdb"].(*docdb) }
 
 func HashPassword(password string) []byte {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -345,12 +345,12 @@ func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	delete(session.Values, "userid")
 	sessions.Save(r, w)
 
-	wikidb := getWikiDb(c)
+	docdb := getDocDb(c)
 	name := r.FormValue("username")
 	password := r.FormValue("password")
 
-	user := User{}
-	err := wikidb.Db.C("users").Find(bson.M{"name": name}).One(&user)
+	user := user{}
+	err := docdb.Db.C("users").Find(bson.M{"name": name}).One(&user)
 	if err == nil {
 		err = bcrypt.CompareHashAndPassword(user.Password, []byte(password))
 		if err == nil {
@@ -418,28 +418,28 @@ func addUserGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func includeDb(db *mgo.Database) func(c *web.C, h http.Handler) http.Handler {
-	wikidb := &WikiDb{
+	docdb := &docdb{
 		Db: db,
 	}
 
 	return func(c *web.C, h http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			c.Env["wikidb"] = wikidb
+			c.Env["docdb"] = docdb
 			h.ServeHTTP(w, r)
 		}
 		return http.HandlerFunc(fn)
 	}
 }
 
-func getUserIfLoggedin(c web.C, r *http.Request) (*User, error) {
+func getUserIfLoggedin(c web.C, r *http.Request) (*user, error) {
 	session, _ := store.Get(r, SESSION_NAME)
 	id, ok := session.Values["userid"]
 	if !ok {
 		return nil, ErrUserNotFound
 	}
 
-	wikidb := getWikiDb(c)
-	user, err := getUserById(wikidb.Db, bson.ObjectIdHex(id.(string)))
+	docdb := getDocDb(c)
+	user, err := getUserById(docdb.Db, bson.ObjectIdHex(id.(string)))
 	if err == mgo.ErrNotFound {
 		return nil, ErrUserNotFound
 	} else if err != nil {
@@ -492,20 +492,20 @@ func addTestData(db *mgo.Database) {
 	db.C("groups").RemoveAll(nil)   // FIXME
 
 	guestHash, _ := bcrypt.GenerateFromPassword([]byte("guest"), bcrypt.DefaultCost)
-	user := &User{
+	u := &user{
 		Name:     "guest",
 		Password: guestHash,
 	}
 
-	err := db.C("users").Insert(user)
+	err := db.C("users").Insert(u)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	admin := &User{
+	admin := &user{
 		Name:        "admin",
 		Password:    []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
-		Permissions: map[Permission]bool{ADMIN: true, EDITOR: true},
+		Permissions: map[permission]bool{ADMIN: true, EDITOR: true},
 	}
 
 	err = db.C("users").Insert(admin)
@@ -513,7 +513,7 @@ func addTestData(db *mgo.Database) {
 		log.Fatalln(err)
 	}
 
-	projIrori := &Project{
+	projIrori := &project{
 		Name: "irori"}
 
 	err = db.C("projects").Insert(projIrori)

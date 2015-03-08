@@ -14,7 +14,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-type Group struct {
+type group struct {
 	Id    bson.ObjectId `bson:"_id,omitempty" json:"id,omitempty"`
 	Name  string
 	Users []bson.ObjectId
@@ -25,11 +25,11 @@ func groupsGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func apiGroupListGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	wikidb := getWikiDb(c)
+	docdb := getDocDb(c)
 
-	groups := []Group{}
+	groups := []group{}
 
-	err := wikidb.Db.C("groups").Find(bson.M{}).All(&groups)
+	err := docdb.Db.C("groups").Find(bson.M{}).All(&groups)
 	if err != nil {
 		log.Fatal("!!!!! get groups")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -56,10 +56,10 @@ func apiGroupGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wikidb := getWikiDb(c)
+	docdb := getDocDb(c)
 
-	var group Group
-	err := wikidb.Db.C("groups").FindId(gid).One(&group)
+	var group group
+	err := docdb.Db.C("groups").FindId(gid).One(&group)
 	if err == mgo.ErrNotFound {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -75,10 +75,10 @@ func apiGroupGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func apiGroupCreateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	wikidb := getWikiDb(c)
+	docdb := getDocDb(c)
 
 	defer r.Body.Close()
-	var group Group
+	var group group
 	if err := json.NewDecoder(r.Body).Decode(&group); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -86,7 +86,7 @@ func apiGroupCreateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	// TODO: verify incomming
 
-	changeinfo, err := wikidb.Db.C("groups").Upsert(bson.M{"name": group.Name},
+	changeinfo, err := docdb.Db.C("groups").Upsert(bson.M{"name": group.Name},
 		bson.M{"$setOnInsert": group})
 	if err != nil {
 		log.Println(err)
@@ -103,12 +103,12 @@ func apiGroupCreateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func apiGroupPutHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	wikidb := getWikiDb(c)
+	docdb := getDocDb(c)
 
 	groupId := bson.ObjectIdHex(c.URLParams["groupId"])
 
 	defer r.Body.Close()
-	var group Group
+	var group group
 	if err := json.NewDecoder(r.Body).Decode(&group); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -116,7 +116,7 @@ func apiGroupPutHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	// TODO: verify incomming
 
-	err := wikidb.Db.C("groups").UpdateId(groupId, group)
+	err := docdb.Db.C("groups").UpdateId(groupId, group)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -141,11 +141,11 @@ func groupEditHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func projectsGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	wikidb := getWikiDb(c)
+	docdb := getDocDb(c)
 
-	projects := []Project{}
+	projects := []project{}
 
-	err := wikidb.Db.C("projects").Find(bson.M{}).All(&projects)
+	err := docdb.Db.C("projects").Find(bson.M{}).All(&projects)
 	if err != nil {
 		log.Fatal("@@@ projects")
 	}
@@ -154,11 +154,11 @@ func projectsGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func apiProjectsGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	wikidb := getWikiDb(c)
+	docdb := getDocDb(c)
 
-	projects := []Project{}
+	projects := []project{}
 
-	err := wikidb.Db.C("projects").Find(bson.M{}).All(&projects)
+	err := docdb.Db.C("projects").Find(bson.M{}).All(&projects)
 	if err != nil {
 		log.Fatal("@@@ projects")
 	}
@@ -175,15 +175,15 @@ func apiProjectsGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 func apiProjectsPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	var p Project
+	var p project
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	wikidb := getWikiDb(c)
+	docdb := getDocDb(c)
 
-	changeinfo, err := wikidb.Db.C("projects").Upsert(bson.M{"name": p.Name},
+	changeinfo, err := docdb.Db.C("projects").Upsert(bson.M{"name": p.Name},
 		bson.M{"$setOnInsert": p})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -201,10 +201,10 @@ func apiProjectsPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 func apiPageCreateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	user := getSessionUser(c)
-	wikidb := getWikiDb(c)
+	docdb := getDocDb(c)
 
 	defer r.Body.Close()
-	var p Page
+	var p page
 
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -218,7 +218,7 @@ func apiPageCreateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	log.Println(p)
 
-	err := wikidb.Db.C("pages").Insert(p)
+	err := docdb.Db.C("pages").Insert(p)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -239,7 +239,7 @@ func apiPageUpdateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer r.Body.Close()
-	var p Page
+	var p page
 
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -274,11 +274,11 @@ func apiPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func apiUserListGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	wikidb := getWikiDb(c)
+	docdb := getDocDb(c)
 
-	users := []User{}
+	users := []user{}
 
-	err := wikidb.Db.C("users").Find(bson.M{"$or": []interface{}{
+	err := docdb.Db.C("users").Find(bson.M{"$or": []interface{}{
 		bson.M{"disabled": bson.M{"$exists": false}},
 		bson.M{"disabled": false}}}).All(&users)
 
@@ -307,9 +307,9 @@ func apiUserDeleteHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wikidb := getWikiDb(c)
+	docdb := getDocDb(c)
 
-	err := wikidb.Db.C("users").UpdateId(uid, bson.M{"disabled": true})
+	err := docdb.Db.C("users").UpdateId(uid, bson.M{"disabled": true})
 	if err == mgo.ErrNotFound {
 		log.Println("user not found: ", uid)
 		w.WriteHeader(http.StatusNotFound)
@@ -351,17 +351,17 @@ func apiUserPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := &User{
+	user := &user{
 		Name:        u.Name,
 		EMail:       u.Email,
 		Password:    HashPassword(u.Password),
-		Permissions: map[Permission]bool{EDITOR: true}, //FIXME
+		Permissions: map[permission]bool{EDITOR: true}, //FIXME
 		Disabled:    false,
 	}
 
-	wikidb := getWikiDb(c)
+	docdb := getDocDb(c)
 	// Register user only if user.Email not found.
-	changeinfo, err := wikidb.Db.C("users").Upsert(bson.M{"email": user.EMail},
+	changeinfo, err := docdb.Db.C("users").Upsert(bson.M{"email": user.EMail},
 		bson.M{"$setOnInsert": user})
 	if err != nil {
 		log.Println(err)
@@ -379,11 +379,11 @@ func apiUserPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func userListHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	wikidb := getWikiDb(c)
+	docdb := getDocDb(c)
 
-	users := []User{}
+	users := []user{}
 
-	err := wikidb.Db.C("users").Find(bson.M{}).All(&users)
+	err := docdb.Db.C("users").Find(bson.M{}).All(&users)
 	if err != nil {
 		log.Fatal("!!!! find users", err)
 		w.WriteHeader(http.StatusInternalServerError)
