@@ -9,7 +9,6 @@ app.config ($interpolateProvider) ->
 app.factory 'Project', [
   '$resource', ($resource) ->
     $resource '/api/projects', {}, {
-      query: {method:'GET', isArray:true}
     }]
 
 app.controller 'ProjectsCtrl', [
@@ -46,7 +45,7 @@ app.controller 'PageUpdateCtrl', [
   'Page', 'Project', 'Group', '$window', '$scope', (Page, Project, Group, $window, $scope) ->
     $scope.groups = Group.query()
     $scope.projects = Project.query()
-    
+
     this.updatePage = () ->
       page = new Page($scope.page)
       page.$save().then (res) ->
@@ -58,6 +57,12 @@ app.controller 'PageUpdateCtrl', [
         for g in $scope.groups
           if g.id in page.Groups
             g.enabled = true
+  ]
+
+app.controller 'PageCtrl', [
+  'Page', '$window', '$scope', (Page, $window, $scope) ->
+    $scope.pages = Page.query()
+    $scope.ownpages = Page.query({pageId:'own'})
   ]
 
 app.directive 'pageEditor', () ->

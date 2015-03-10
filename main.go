@@ -35,6 +35,7 @@ const (
 
 type page struct {
 	Id       bson.ObjectId `bson:"_id"`
+	Author   bson.ObjectId
 	Article  article
 	History  []history `json:"-"`
 	Projects []bson.ObjectId
@@ -227,8 +228,10 @@ func viewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	if err == mgo.ErrNotFound {
 		// TODO : when user is removed?
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	} else if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	// time.location
@@ -361,7 +364,7 @@ func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			session.Values["userid"] = user.Id.Hex()
 			sessions.Save(r, w)
-			http.Redirect(w, r, "/wiki", http.StatusSeeOther)
+			http.Redirect(w, r, "/home", http.StatusSeeOther)
 			return
 		}
 	}
@@ -417,6 +420,13 @@ func markdownPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 func addUserGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	err := executeWriterFromFile(w, "view/adduser.html", &pongo2.Context{})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func homeHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	err := executeWriterFromFile(w, "view/home.html", &pongo2.Context{})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -555,7 +565,9 @@ func setRoute(db *mgo.Database) {
 	apiMux.Get("/api/projects", apiProjectsGetHandler)
 	apiMux.Post("/api/projects", apiProjectsPostHandler)
 
+	apiMux.Get("/api/pages/own", apiOwnPageGetHandler)
 	apiMux.Get("/api/pages/:pageId", apiPageGetHandler)
+	apiMux.Get("/api/pages", apiPageListGetHandler)
 	apiMux.Post("/api/pages/:pageId", apiPageUpdateHandler)
 	apiMux.Post("/api/pages", apiPageCreateHandler)
 
@@ -580,9 +592,13 @@ func setRoute(db *mgo.Database) {
 	mdMux.Use(needLogin)
 	mdMux.Post("/markdown", markdownPostHandler)
 
+	homeMux := web.New()
+	homeMux.Get("/home", homeHandler)
+
 	goji.Use(includeDb(db))
 	goji.Get("/assets/*", http.FileServer(http.Dir(".")))
 	goji.Handle("/wiki/*", pageMux)
+	goji.Handle("/home", homeMux)
 	goji.Handle("/markdown", mdMux)
 	goji.Handle("/action/*", loginUserActionMux)
 	goji.Handle("/admin/*", adminMux)
