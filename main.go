@@ -286,43 +286,6 @@ func editPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func savePagePostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	user := getSessionUser(c)
-	if !user.HasPermission(EDITOR) {
-		http.Error(w, "You are not editor", http.StatusMethodNotAllowed)
-		return
-	}
-
-	pageId := c.URLParams["pageId"]
-
-	p, err := getPageFromDb(c, pageId)
-	if err != nil {
-		// FIXME : redirect to top page or "NotFound" page
-		http.Error(w, err.Error(), http.StatusNotFound)
-	}
-
-	p.Article.Title = r.FormValue("title")
-	p.Article.Body = r.FormValue("body")
-
-	pids := []bson.ObjectId{}
-	for _, v := range r.Form["projects"] {
-		// FIXME: check project id
-		if pid := bson.ObjectIdHex(v); pid.Valid() {
-			pids = append(pids, pid)
-		}
-	}
-	p.Projects = pids
-
-	err = p.save(c, r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	http.Redirect(w, r, "/wiki/"+pageId, http.StatusFound)
-}
-
 func getDocDb(c web.C) *docdb { return c.Env["docdb"].(*docdb) }
 
 func HashPassword(password string) []byte {
@@ -373,27 +336,8 @@ func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	executeWriterFromFile(w, "view/login.html", &pongo2.Context{"error": "Incorrect username or password."})
 }
 
-func topPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	user, err := getUserIfLoggedin(c, r)
-	if err != nil {
-		if err == ErrUserNotFound {
-			err := executeWriterFromFile(w, "view/prelogin.html", &pongo2.Context{})
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-			}
-		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-	} else {
-		err := executeWriterFromFile(w, "view/main.html", &pongo2.Context{"loginuser": user})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-	}
-}
-
 func rootHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/wiki", http.StatusMovedPermanently)
+	http.Redirect(w, r, "/home", http.StatusMovedPermanently)
 }
 
 func logoutPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -401,7 +345,7 @@ func logoutPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	delete(session.Values, "userid")
 	sessions.Save(r, w)
 
-	http.Redirect(w, r, "/wiki", http.StatusFound)
+	http.Redirect(w, r, "/home", http.StatusFound)
 }
 
 func markdownPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -544,7 +488,6 @@ func setRoute(db *mgo.Database) {
 	m.Get("/login", loginPageGetHandler)
 	m.Post("/login", loginPostHandler)
 	m.Post("/logout", logoutPostHandler)
-	m.Get("/wiki", topPageGetHandler)
 	m.Get("/", rootHandler)
 
 	loginUserActionMux := web.New()
@@ -585,7 +528,6 @@ func setRoute(db *mgo.Database) {
 	pageMux.Use(needLogin)
 	pageMux.Get("/wiki/:pageId", viewPageGetHandler)
 	pageMux.Get("/wiki/:pageId/edit", editPageGetHandler)
-	pageMux.Post("/wiki/:pageId", savePagePostHandler)
 
 	// Mux : convert Markdown to HTML which is send by Ajax
 	mdMux := web.New()
@@ -593,6 +535,7 @@ func setRoute(db *mgo.Database) {
 	mdMux.Post("/markdown", markdownPostHandler)
 
 	homeMux := web.New()
+	homeMux.Use(needLogin)
 	homeMux.Get("/home", homeHandler)
 
 	goji.Use(includeDb(db))
