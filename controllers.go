@@ -212,6 +212,7 @@ func apiPageCreateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 
 	p.Id = bson.NewObjectId()
+	p.Author = user.Id
 	p.Article.Id = bson.NewObjectId()
 	p.Article.UserId = user.Id
 	p.Article.Date = time.Now()
@@ -268,6 +269,53 @@ func apiPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 
 	js, _ := json.Marshal(page)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
+func apiOwnPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	user := getSessionUser(c)
+	docdb := getDocDb(c)
+
+	var pages []page
+
+	err := docdb.Db.C("pages").Find(bson.M{"author": user.Id}).Select(bson.M{"history": 0}).All(&pages)
+	if err != nil {
+		log.Println("apiPageListGetHandler Find Failed: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	js, err := json.Marshal(pages)
+	if err != nil {
+		log.Println("apiPageListGetHandler json Marshal Failed: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
+func apiPageListGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	docdb := getDocDb(c)
+
+	var pages []page
+
+	err := docdb.Db.C("pages").Find(bson.M{}).Select(bson.M{"history": 0}).All(&pages)
+	if err != nil {
+		log.Println("apiPageListGetHandler Find Failed: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	js, err := json.Marshal(pages)
+	if err != nil {
+		log.Println("apiPageListGetHandler json Marshal Failed: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
