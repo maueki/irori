@@ -462,8 +462,8 @@ func addTestData(db *mgo.Database) {
 	}
 
 	admin := &user{
-		Name:        "admin",
-		Password:    []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
+		Name: "admin",
+		Password: []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
 		Permissions: map[permission]bool{ADMIN: true, EDITOR: true},
 	}
 
@@ -522,6 +522,8 @@ func setRoute(db *mgo.Database) {
 	apiMux.Get("/api/users", apiUserListGetHandler)
 	apiMux.Post("/api/users", apiUserPostHandler)
 	apiMux.Delete("/api/users/:userId", apiUserDeleteHandler)
+
+	apiMux.Get("/api/users/:userId/icon", apiUserIconHandler)
 
 	// Mux : create new page or show a page created already
 	pageMux := web.New()

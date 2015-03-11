@@ -26,7 +26,7 @@
       <div role="tabpanel" class="tab-pane active" id="all">
         <div ng-repeat="page in pages">
           <div class="page-summary">
-            <div class="page-author-icon"><img src="/assets/images/icon.png" alt="author" class="img-circle"></div>
+            <div class="page-author-icon"><img ng-src="/api/users/{$ page.Author $}/icon" alt="author" class="img-circle"></div>
             <div class="page-info"><h1><a href="/wiki/{$ page.Id $}">{$ page.Article.Title $}</a></h1></div>
           </div>
         </div>
@@ -34,7 +34,7 @@
       <div role="tabpanel" class="tab-pane" id="mine">
         <div ng-repeat="page in ownpages">
           <div class="page-summary">
-            <div class="page-author-icon"><img src="/assets/images/icon.png" alt="author" class="img-circle"></div>
+            <div class="page-author-icon"><img ng-src="/api/users/{$ page.Author $}/icon" alt="author" class="img-circle"></div>
             <div class="page-info"><h1><a href="/wiki/{$ page.Id $}">{$ page.Article.Title $}</a></h1></div>
           </div>
         </div>
