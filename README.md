@@ -21,11 +21,11 @@ $ make
 $ ./irori -bind :9090
 ```
 
-Access to http://localhost:9090/wiki
+Access to http://localhost:9090/
 
 # Demo Page
 
-https://irori-demo.herokuapp.com/wiki
+https://irori-demo.herokuapp.com/
 
 # License
 
