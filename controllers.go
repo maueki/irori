@@ -1,7 +1,10 @@
 package main
 
 import (
+	"crypto/sha1"
 	"encoding/json"
+	"image/color"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -12,6 +15,8 @@ import (
 
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+
+	"github.com/cupcake/sigil/gen"
 )
 
 type group struct {
@@ -438,4 +443,31 @@ func userListHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 
 	executeWriterFromFile(w, "view/users.html", &pongo2.Context{})
+}
+
+var config = gen.Sigil{
+	Rows: 5,
+	Foreground: []color.NRGBA{
+		rgb(45, 79, 255),
+		rgb(254, 180, 44),
+		rgb(226, 121, 234),
+		rgb(30, 179, 253),
+		rgb(232, 77, 65),
+		rgb(49, 203, 115),
+		rgb(141, 69, 170),
+	},
+	Background: rgb(224, 224, 224),
+}
+
+func rgb(r, g, b uint8) color.NRGBA { return color.NRGBA{r, g, b, 255} }
+
+func apiUserIconHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	userid := c.URLParams["userId"]
+
+	// FIXME: use identicon only if user dosen't have icon.
+	h := sha1.New()
+	io.WriteString(h, userid)
+
+	w.Header().Set("Content-Type", "image/svg+xml")
+	config.MakeSVG(w, 250, false, h.Sum(nil))
 }
