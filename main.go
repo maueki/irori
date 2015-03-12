@@ -34,21 +34,21 @@ const (
 )
 
 type page struct {
-	Id       bson.ObjectId `bson:"_id"`
-	Author   bson.ObjectId
-	Article  article
-	History  []history `json:"-"`
-	Projects []bson.ObjectId
-	Access   AccessLevel
-	Groups   []bson.ObjectId
+	Id       bson.ObjectId   `bson:"_id" json:"id"`
+	Author   bson.ObjectId   `json:"author"`
+	Article  article         `json:"article"`
+	History  []history       `json:"-"`
+	Projects []bson.ObjectId `json:"projects"`
+	Access   AccessLevel     `json:"access"`
+	Groups   []bson.ObjectId `json:"groups"`
 }
 
 type article struct {
-	Id     bson.ObjectId `bson:"_id,omitempty"`
-	Title  string
-	Body   string
-	UserId bson.ObjectId
-	Date   time.Time
+	Id     bson.ObjectId `bson:"_id,omitempty" json:"id"`
+	Title  string        `json:"title"`
+	Body   string        `json:"body"`
+	UserId bson.ObjectId `json:"userId"`
+	Date   time.Time     `json:"date"`
 }
 
 type history struct {
@@ -78,7 +78,7 @@ type user struct {
 
 type project struct {
 	Id   bson.ObjectId `bson:"_id,omitempty" json:"id,omitempty"`
-	Name string
+	Name string        `json:"name"`
 }
 
 func (u *user) HasPermission(perm permission) bool {
@@ -446,36 +446,26 @@ func needAdmin(c *web.C, h http.Handler) http.Handler {
 }
 
 func addTestData(db *mgo.Database) {
-	db.C("users").RemoveAll(nil)    // FIXME
-	db.C("projects").RemoveAll(nil) // FIXME
-	db.C("groups").RemoveAll(nil)   // FIXME
-
 	guestHash, _ := bcrypt.GenerateFromPassword([]byte("guest"), bcrypt.DefaultCost)
 	u := &user{
 		Name:     "guest",
 		Password: guestHash,
 	}
 
-	err := db.C("users").Insert(u)
+	_, err := db.C("users").Upsert(bson.M{"name": u.Name},
+		bson.M{"$setOnInsert": u})
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	admin := &user{
-		Name: "admin",
-		Password: []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
+		Name:        "admin",
+		Password:    []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
 		Permissions: map[permission]bool{ADMIN: true, EDITOR: true},
 	}
 
-	err = db.C("users").Insert(admin)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	projIrori := &project{
-		Name: "irori"}
-
-	err = db.C("projects").Insert(projIrori)
+	_, err = db.C("users").Upsert(bson.M{"name": admin.Name},
+		bson.M{"$setOnInsert": admin})
 	if err != nil {
 		log.Fatalln(err)
 	}

@@ -6,10 +6,10 @@
     </li>
   </ul>
   <h3>Access Level</h3>
-  <input type="radio" ng-model="page.Access" value="public">Public <br/>
-  <input type="radio" ng-model="page.Access" value="group">Group <br/>
-  <div class="group-list" ng-show="page.Access=='group'" ng-repeat="group in groups">
+  <input type="radio" ng-model="page.access" value="public">Public <br/>
+  <input type="radio" ng-model="page.access" value="group">Group <br/>
+  <div class="group-list" ng-show="page.access=='group'" ng-repeat="group in groups">
     <input name="" type="checkbox" ng-model="group.enabled">{$ group.Name $}</input>
   </div>
-  <input type="radio" ng-model="page.Access" value="private">Private <br/>
+  <input type="radio" ng-model="page.access" value="private">Private <br/>
 </nav>
