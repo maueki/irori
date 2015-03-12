@@ -446,36 +446,26 @@ func needAdmin(c *web.C, h http.Handler) http.Handler {
 }
 
 func addTestData(db *mgo.Database) {
-	db.C("users").RemoveAll(nil)    // FIXME
-	db.C("projects").RemoveAll(nil) // FIXME
-	db.C("groups").RemoveAll(nil)   // FIXME
-
 	guestHash, _ := bcrypt.GenerateFromPassword([]byte("guest"), bcrypt.DefaultCost)
 	u := &user{
 		Name:     "guest",
 		Password: guestHash,
 	}
 
-	err := db.C("users").Insert(u)
+	_, err := db.C("users").Upsert(bson.M{"name": u.Name},
+		bson.M{"$setOnInsert": u})
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	admin := &user{
-		Name: "admin",
-		Password: []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
+		Name:        "admin",
+		Password:    []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
 		Permissions: map[permission]bool{ADMIN: true, EDITOR: true},
 	}
 
-	err = db.C("users").Insert(admin)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	projIrori := &project{
-		Name: "irori"}
-
-	err = db.C("projects").Insert(projIrori)
+	_, err = db.C("users").Upsert(bson.M{"name": admin.Name},
+		bson.M{"$setOnInsert": admin})
 	if err != nil {
 		log.Fatalln(err)
 	}
