@@ -38,7 +38,7 @@ app.controller 'PageCreateCtrl', [
       if page.Access == "group"
         page.Groups = (g.id for g in $scope.groups when g.enabled)
       page.$save().then (res) ->
-        $window.location.href = '/wiki/' + res.Id
+        $window.location.href = '/wiki/' + res.id
   ]
 
 app.controller 'PageUpdateCtrl', [
@@ -48,8 +48,9 @@ app.controller 'PageUpdateCtrl', [
 
     this.updatePage = () ->
       page = new Page($scope.page)
-      page.$save().then (res) ->
-        $window.location.href = '/wiki/' + res.Id
+      console.log page
+      page.$save({pageId: page.id}).then (res) ->
+        $window.location.href = '/wiki/' + res.id
 
     this.load = (id) ->
       $scope.page = Page.get {'pageId': id}

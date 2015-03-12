@@ -34,21 +34,21 @@ const (
 )
 
 type page struct {
-	Id       bson.ObjectId `bson:"_id"`
-	Author   bson.ObjectId
-	Article  article
-	History  []history `json:"-"`
-	Projects []bson.ObjectId
-	Access   AccessLevel
-	Groups   []bson.ObjectId
+	Id       bson.ObjectId   `bson:"_id" json:"id"`
+	Author   bson.ObjectId   `json:"author"`
+	Article  article         `json:"article"`
+	History  []history       `json:"-"`
+	Projects []bson.ObjectId `json:"projects"`
+	Access   AccessLevel     `json:"access"`
+	Groups   []bson.ObjectId `json:"groups"`
 }
 
 type article struct {
-	Id     bson.ObjectId `bson:"_id,omitempty"`
-	Title  string
-	Body   string
-	UserId bson.ObjectId
-	Date   time.Time
+	Id     bson.ObjectId `bson:"_id,omitempty" json:"id"`
+	Title  string        `json:"title"`
+	Body   string        `json:"body"`
+	UserId bson.ObjectId `json:"userId"`
+	Date   time.Time     `json:"date"`
 }
 
 type history struct {
@@ -78,7 +78,7 @@ type user struct {
 
 type project struct {
 	Id   bson.ObjectId `bson:"_id,omitempty" json:"id,omitempty"`
-	Name string
+	Name string        `json:"name"`
 }
 
 func (u *user) HasPermission(perm permission) bool {
