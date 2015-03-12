@@ -1,13 +1,13 @@
 package main
 
 import (
+	"crypto/sha1"
 	"encoding/json"
+	"image/color"
+	"io"
 	"log"
 	"net/http"
 	"time"
-	"crypto/sha1"
-	"image/color"
-	"io"
 
 	"github.com/flosch/pongo2"
 	_ "github.com/flosch/pongo2-addons"
@@ -464,6 +464,7 @@ func rgb(r, g, b uint8) color.NRGBA { return color.NRGBA{r, g, b, 255} }
 func apiUserIconHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	userid := c.URLParams["userId"]
 
+	// FIXME: use identicon only if user dosen't have icon.
 	h := sha1.New()
 	io.WriteString(h, userid)
 
