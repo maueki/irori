@@ -376,6 +376,13 @@ func homeHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func profileGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	err := executeWriterFromFile(w, "view/profile.html", &pongo2.Context{})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func includeDb(db *mgo.Database) func(c *web.C, h http.Handler) http.Handler {
 	docdb := &docdb{
 		Db: db,
@@ -530,6 +537,10 @@ func setRoute(db *mgo.Database) {
 	homeMux.Use(needLogin)
 	homeMux.Get("/home", homeHandler)
 
+	profileMux := web.New()
+	profileMux.Use(needLogin)
+	profileMux.Get("/profile", profileGetHandler)
+
 	goji.Use(includeDb(db))
 	goji.Get("/assets/*", http.FileServer(http.Dir(".")))
 	goji.Handle("/wiki/*", pageMux)
@@ -538,6 +549,8 @@ func setRoute(db *mgo.Database) {
 	goji.Handle("/action/*", loginUserActionMux)
 	goji.Handle("/admin/*", adminMux)
 	goji.Handle("/api/*", apiMux)
+	goji.Handle("/profile", profileMux)
+	goji.Handle("/profile/*", profileMux)
 	goji.Handle("/*", m)
 }
 
