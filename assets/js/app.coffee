@@ -154,3 +154,18 @@ app.controller 'UserAddCtrl', [
       user.$save().then (res) ->
         $window.location.href = '/admin/users'
   ]
+
+app.factory 'Password', [
+  '$resource', ($resource) ->
+    $resource '/api/password', {}, {
+      update: {method: 'PUT'}
+      }]
+
+app.controller 'UserPasswordController', [
+  'Password', '$scope', '$window', (Password, $scope, $window) ->
+    this.updatePassword = () ->
+      password = new Password($scope.password)
+      console.log password
+      password.$update().then () ->
+        $window.location.href = '/profile'
+  ]

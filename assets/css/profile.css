@@ -1,5 +1,5 @@
 
-.sidebar {
+.sidebar-wrapper {
     position: fixed;
     top: 51px;
     bottom: 0;
@@ -34,4 +34,7 @@
     width: 20px;
     color: #888;
     margin-right: 23px;
+}
+
+.content-wrapper {
 }

@@ -383,6 +383,13 @@ func profileGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func profilePasswordHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	err := executeWriterFromFile(w, "view/profile-password.html", &pongo2.Context{})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func includeDb(db *mgo.Database) func(c *web.C, h http.Handler) http.Handler {
 	docdb := &docdb{
 		Db: db,
@@ -466,8 +473,8 @@ func addTestData(db *mgo.Database) {
 	}
 
 	admin := &user{
-		Name:        "admin",
-		Password:    []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
+		Name: "admin",
+		Password: []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
 		Permissions: map[permission]bool{ADMIN: true, EDITOR: true},
 	}
 
@@ -522,6 +529,8 @@ func setRoute(db *mgo.Database) {
 
 	apiMux.Get("/api/users/:userId/icon", apiUserIconHandler)
 
+	apiMux.Put("/api/password", apiPasswordHandler)
+
 	// Mux : create new page or show a page created already
 	pageMux := web.New()
 	pageMux.Use(needLogin)
@@ -540,6 +549,7 @@ func setRoute(db *mgo.Database) {
 	profileMux := web.New()
 	profileMux.Use(needLogin)
 	profileMux.Get("/profile", profileGetHandler)
+	profileMux.Get("/profile/password/edit", profilePasswordHandler)
 
 	goji.Use(includeDb(db))
 	goji.Get("/assets/*", http.FileServer(http.Dir(".")))
