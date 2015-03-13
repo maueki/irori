@@ -85,7 +85,7 @@ app.directive 'pageEditor', () ->
           success: (data) ->
             $('#output', element).html(data) 
 
-      scope.$watch 'page.Article.Body', (value) ->
+      scope.$watch 'page.article.body', (value) ->
         clearTimeout timer
         timer = setTimeout scope.sendText, 2000
   }
