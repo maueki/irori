@@ -1,0 +1,25 @@
+{% extends "navbar.html" %}
+
+{% block title %} Profile {% endblock %}
+
+{% block posthead_main %}
+<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+<link href="/assets/css/profile.css" rel="stylesheet">
+{% block profile_content_head %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+
+<div class="col-md-2 sidebar-wrapper">
+  <ul class="nav nav-sidebar">
+    <li><a href="/profile"><i class="fa fa-user"></i><span>profile</span></a></li>
+    <li><a href="/profile/password/edit"><i class="fa fa-lock"></i><span>password</span></a></li>
+  </ul>
+</div>
+
+<div class="col-md-10 col-md-offset-2 content-wrapper">
+{% block profile_content %}
+{% endblock %}
+</div>
+
+{% endblock %}

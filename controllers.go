@@ -17,6 +17,8 @@ import (
 	"gopkg.in/mgo.v2/bson"
 
 	"github.com/cupcake/sigil/gen"
+
+	"code.google.com/p/go.crypto/bcrypt"
 )
 
 type group struct {
@@ -470,4 +472,35 @@ func apiUserIconHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "image/svg+xml")
 	config.MakeSVG(w, 250, false, h.Sum(nil))
+}
+
+type updatePassword struct {
+	CurrentPassword string `json:"currentPassword"`
+	NewPassword     string `json:"newPassword"`
+}
+
+func apiPasswordHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	user := getSessionUser(c)
+	defer r.Body.Close()
+
+	var p updatePassword
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	err := bcrypt.CompareHashAndPassword(user.Password, []byte(p.CurrentPassword))
+	if err != nil {
+		log.Println("apiPasswordHandler Failed: Password Incorrect")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	docdb := getDocDb(c)
+	err = docdb.Db.C("users").UpdateId(user.Id, bson.M{"$set": bson.M{"password": HashPassword(p.NewPassword)}})
+	if err != nil {
+		log.Println("apiPasswordHandler Failed: Update password")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
