@@ -1,5 +1,5 @@
 
-app = angular.module 'irori', ['ngResource']
+app = angular.module 'irori', ['ngResource', 'ngMessages', 'ui.utils']
 
 # In AngularJS, Use '{$ $}' instead of '{{ }}' that is used by pongo2.
 app.config ($interpolateProvider) ->
@@ -167,5 +167,7 @@ app.controller 'UserPasswordController', [
       password = new Password($scope.password)
       console.log password
       password.$update().then () ->
-        $window.location.href = '/profile'
+          $window.location.href = '/profile'
+        ,() ->
+          alert('パスワードの更新に失敗しました')
   ]

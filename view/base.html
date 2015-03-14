@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<html ng-app="irori">
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -20,7 +21,10 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.13/angular.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.13/angular-resource.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.13/angular-resource.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.13/angular-messages.js"></script>
+<script src="https://angular-ui.github.io/ui-utils/dist/ui-utils.js"></script>
+
 <script type="text/javascript" src="/assets/js/app.js"></script>
 
 <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
@@ -29,7 +33,7 @@
 {% block posthead_navbar %}{% endblock %}
 {% block posthead_main %}{% endblock %}
 
-<body ng-app="irori">
+<body>
   {% block body %}{% endblock %}
 </body>
 
@@ -38,3 +42,4 @@
 <script src="/assets/js/utils.js"></script>
 
 {% block exscript %}{% endblock %}
+</html>
