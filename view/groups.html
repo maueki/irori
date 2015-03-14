@@ -8,7 +8,7 @@
     <div class="col-xs-5">
       <form ng-submit="groupCtrl.addGroup()" name="addGroup" class="form-inline">
         <div class="form-group">
-          <input class="form-control" name="" type="text" ng-model="group.Name" placeholder="Group Name"/>
+          <input class="form-control" name="" type="text" ng-model="group.name" placeholder="Group Name"/>
           <input type="submit" value="Add Group" class="btn btn-primary"/>
         </div>
       </form>
@@ -27,7 +27,7 @@
         <tbody>
           <tr ng-repeat="group in groups">
             <td></td>
-            <td><a href="/admin/groups/{$ group.id $}">{$ group.Name $}</a></td>
+            <td><a href="/admin/groups/{$ group.id $}">{$ group.name $}</a></td>
           </tr>
         </tbody>
       </table>

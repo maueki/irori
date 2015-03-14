@@ -135,7 +135,7 @@ func (p *page) save(c web.C, r *http.Request) error {
 	docdb := getDocDb(c)
 
 	return docdb.Db.C("pages").UpdateId(p.Id,
-		bson.M{"$set": bson.M{"article": p.Article, "projects": p.Projects},
+		bson.M{"$set": bson.M{"article": p.Article, "projects": p.Projects, "access": p.Access, "groups": p.Groups},
 			"$push": bson.M{"history": history}})
 }
 
