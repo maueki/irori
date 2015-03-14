@@ -14,7 +14,7 @@ app.factory 'Project', [
 app.controller 'ProjectsCtrl', [
   'Project',  '$scope', (Project, $scope) ->
     $scope.projects = Project.query()
-    $scope.project = new Project( Name: "")
+    $scope.project = new Project( name: "")
     ctrl = this
 
     this.addProject = () ->
@@ -35,8 +35,8 @@ app.controller 'PageCreateCtrl', [
 
     this.addPage = () ->
       page = new Page($scope.page)
-      if page.Access == "group"
-        page.Groups = (g.id for g in $scope.groups when g.enabled)
+      if page.access == "group"
+        page.groups = (g.id for g in $scope.groups when g.enabled)
       page.$save().then (res) ->
         $window.location.href = '/wiki/' + res.id
   ]
@@ -48,6 +48,10 @@ app.controller 'PageUpdateCtrl', [
 
     this.updatePage = () ->
       page = new Page($scope.page)
+      if page.access == "group"
+        page.groups = (g.id for g in $scope.groups when g.enabled)
+      else
+        page.groups = []
       console.log page
       page.$save({pageId: page.id}).then (res) ->
         $window.location.href = '/wiki/' + res.id
@@ -56,7 +60,7 @@ app.controller 'PageUpdateCtrl', [
       $scope.page = Page.get {'pageId': id}
       $scope.page.$promise.then (page)->
         for g in $scope.groups
-          if g.id in page.Groups
+          if g.id in page.groups
             g.enabled = true
   ]
 
@@ -110,12 +114,12 @@ app.factory 'Group', [
 app.controller 'GroupCtrl', [
   'Group', '$scope', (Group, $scope) ->
     $scope.groups = Group.query()
-    $scope.group = new Group( Name: "")
+    $scope.group = new Group( name: "")
 
     this.addGroup = () ->
       console.log('add group: ', $scope.group)
       $scope.group.$save ()->
-        $scope.group.Name = ''
+        $scope.group.name = ''
         $scope.groups = Group.query()
   ]
 
@@ -128,12 +132,12 @@ app.controller 'EditGroupCtrl', [
         $scope.users = ( {
           id : user.id
           name : user.name
-          enabled : user.id in $scope.group.Users
+          enabled : user.id in $scope.group.users
         } for user in users )
 
     this.submit = () ->
-      console.log $scope.group.Name
-      $scope.group.Users = ( user.id for user in $scope.users when user.enabled)
+      console.log $scope.group.name
+      $scope.group.users = ( user.id for user in $scope.users when user.enabled)
       $scope.group.$update().then () ->
         $window.location.href = '/admin/groups'
   ]

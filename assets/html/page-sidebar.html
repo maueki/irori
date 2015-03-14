@@ -9,7 +9,7 @@
   <input type="radio" ng-model="page.access" value="public">Public <br/>
   <input type="radio" ng-model="page.access" value="group">Group <br/>
   <div class="group-list" ng-show="page.access=='group'" ng-repeat="group in groups">
-    <input name="" type="checkbox" ng-model="group.enabled">{$ group.Name $}</input>
+    <input name="" type="checkbox" ng-model="group.enabled">{$ group.name $}</input>
   </div>
   <input type="radio" ng-model="page.access" value="private">Private <br/>
 </nav>

@@ -5,10 +5,10 @@
 <div class="container" ng-controller="EditGroupCtrl as ctrl" ng-init="ctrl.load('{{ groupid }}')">
   <div class="col-sm-offset-3 col-sm-6">
     <form ng-submit="ctrl.submit()">
-      <h1>Group "{$ group.Name $}"</h1>
+      <h1>Group "{$ group.name $}"</h1>
       <div class="form-group">
         <label for="groupname">Group Name</label>
-        <input class="form-control" id="groupname" type="text" ng-model="group.Name"/>
+        <input class="form-control" id="groupname" type="text" ng-model="group.name"/>
       </div>
 
       <h2>members</h2>

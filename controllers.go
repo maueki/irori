@@ -22,21 +22,31 @@ import (
 )
 
 type group struct {
-	Id    bson.ObjectId `bson:"_id,omitempty" json:"id,omitempty"`
-	Name  string
-	Users []bson.ObjectId
+	Id    bson.ObjectId   `bson:"_id,omitempty" json:"id,omitempty"`
+	Name  string          `json:"name"`
+	Users []bson.ObjectId `json:"users"`
 }
 
 func groupsGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	executeWriterFromFile(w, "view/groups.html", &pongo2.Context{})
 }
 
+func groupListFilter(u *user) bson.M {
+	if u.HasPermission(ADMIN) {
+		return bson.M{}
+	}
+
+	return bson.M{"users": u.Id}
+}
+
 func apiGroupListGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	u := getSessionUser(c)
+
 	docdb := getDocDb(c)
 
 	groups := []group{}
 
-	err := docdb.Db.C("groups").Find(bson.M{}).All(&groups)
+	err := docdb.Db.C("groups").Find(groupListFilter(u)).All(&groups)
 	if err != nil {
 		log.Fatal("!!!!! get groups")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -305,12 +315,42 @@ func apiOwnPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 }
 
+func pageCondition(u *user, db *docdb) (bson.M, error) {
+	var groups []group
+	err := db.Db.C("groups").Find(groupListFilter(u)).All(&groups)
+	if err != nil {
+		return nil, err
+	}
+
+	var gids []bson.ObjectId
+	for _, g := range groups {
+		gids = append(gids, g.Id)
+	}
+
+	cond := bson.M{"$or": []interface{}{
+		bson.M{"author": u.Id},           // user is author
+		bson.M{"access": string(PUBLIC)}, // Access level public
+		bson.M{"groups": bson.M{"$in": gids}},
+	}}
+
+	return cond, nil
+
+}
+
 func apiPageListGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	docdb := getDocDb(c)
+	user := getSessionUser(c)
+
+	cond, err := pageCondition(user, docdb)
+	if err != nil {
+		log.Println("apiPageListGetHandler Failed: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	var pages []page
 
-	err := docdb.Db.C("pages").Find(bson.M{}).Select(bson.M{"history": 0}).All(&pages)
+	err = docdb.Db.C("pages").Find(cond).Select(bson.M{"history": 0}).All(&pages)
 	if err != nil {
 		log.Println("apiPageListGetHandler Find Failed: ", err)
 		w.WriteHeader(http.StatusInternalServerError)
