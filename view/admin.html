@@ -1,0 +1,29 @@
+{% extends "navbar.html" %}
+
+{% block title %} Admin {% endblock %}
+
+{% block posthead_main %}
+<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+<link href="/assets/css/profile.css" rel="stylesheet">
+{% block admin_content_head %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+
+<div class="col-md-2 sidebar-wrapper">
+  <ul class="nav nav-sidebar">
+    <li><a href="/admin"><i class="fa fa-cogs"></i><span>admin</span></a></li>
+    <li><a href="/admin/users"><i class="fa fa-user"></i><span>users</span></a></li>
+    <li><a href="/admin/groups"><i class="fa fa-users"></i><span>groups</span></a></li>
+    <li><a href="/admin/projects"><i class="fa fa-tree"></i><span>projects</span></a></li>
+  </ul>
+</div>
+
+<div class="col-md-10 col-md-offset-2 content-wrapper">
+{% block profile_content %}
+  <h1>Admin</h1>
+  <hr>
+{% endblock %}
+</div>
+
+{% endblock %}
