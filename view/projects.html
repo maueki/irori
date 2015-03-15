@@ -1,9 +1,9 @@
-{% extends "navbar.html" %}
+{% extends "admin.html" %}
 
-{% block content %}
-<div class="container" ng-controller="ProjectsCtrl as projCtrl">
-  <h1>Projects</h1>
-
+{% block admin_content %}
+<div ng-controller="ProjectsCtrl as projCtrl">
+  <h2>Projects</h2>
+  <hr>
   <div class="row">
     <div class="col-xs-5">
       <form ng-submit="projCtrl.addProject()" name="addProject" class="form-inline">

@@ -1,9 +1,9 @@
-{% extends "navbar.html" %}
+{% extends "admin.html" %}
 
-{% block content %}
-<div class="container" ng-controller="GroupCtrl as groupCtrl">
-  <h1>Groups</h1>
-
+{% block admin_content %}
+<div ng-controller="GroupCtrl as groupCtrl">
+  <h2>Groups</h2>
+  <hr>
   <div class="row">
     <div class="col-xs-5">
       <form ng-submit="groupCtrl.addGroup()" name="addGroup" class="form-inline">
