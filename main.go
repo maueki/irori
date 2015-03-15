@@ -483,7 +483,7 @@ func setRoute(db *mgo.Database) {
 	adminMux.Use(needLogin)
 	adminMux.Use(needAdmin)
 	adminMux.Get("/admin/adduser", staticPageHandler("view/adduser.html"))
-	adminMux.Get("/admin/projects", projectsGetHandler)
+	adminMux.Get("/admin/projects", staticPageHandler("view/projects.html"))
 	adminMux.Get("/admin/groups", staticPageHandler("view/groups.html"))
 	adminMux.Get("/admin/groups/:groupId", groupEditHandler)
 	adminMux.Get("/admin/users", staticPageHandler("view/users.html"))

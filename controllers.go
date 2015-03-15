@@ -153,19 +153,6 @@ func groupEditHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	executeWriterFromFile(w, "view/edit-group.html", &pongo2.Context{"groupid": groupId})
 }
 
-func projectsGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	docdb := getDocDb(c)
-
-	projects := []project{}
-
-	err := docdb.Db.C("projects").Find(bson.M{}).All(&projects)
-	if err != nil {
-		log.Fatal("@@@ projects")
-	}
-
-	executeWriterFromFile(w, "view/projects.html", &pongo2.Context{"projects": projects})
-}
-
 func apiProjectsGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	docdb := getDocDb(c)
 
