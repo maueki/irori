@@ -485,15 +485,31 @@ var config = gen.Sigil{
 
 func rgb(r, g, b uint8) color.NRGBA { return color.NRGBA{r, g, b, 255} }
 
-func apiUserIconHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	userid := c.URLParams["userId"]
-
-	// FIXME: use identicon only if user dosen't have icon.
+func writeDefaultIcon(w http.ResponseWriter, id bson.ObjectId) {
 	h := sha1.New()
-	io.WriteString(h, userid)
+	io.WriteString(h, id.Hex())
 
 	w.Header().Set("Content-Type", "image/svg+xml")
 	config.MakeSVG(w, 250, false, h.Sum(nil))
+}
+
+func apiOwnIconHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	user := getSessionUser(c)
+
+	writeDefaultIcon(w, user.Id)
+}
+
+func apiUserIconHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	userid := c.URLParams["userId"]
+
+	id := bson.ObjectIdHex(userid)
+	if !id.Valid() {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// FIXME: use identicon only if user dosen't have icon.
+	writeDefaultIcon(w, id)
 }
 
 type updatePassword struct {
