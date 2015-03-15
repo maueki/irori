@@ -1,9 +1,9 @@
-{% extends "navbar.html" %}
+{% extends "admin.html" %}
 
-{% block content %}
-<div class="container" ng-controller="UsersCtrl as usersCtrl">
-  <h1>Users</h1>
-
+{% block admin_content %}
+<div ng-controller="UsersCtrl as usersCtrl">
+  <h2>Users</h2>
+  <hr>
   <a href="/admin/adduser" class="btn btn-default"><i class="fa fa-user-plus"></i>Add User</a>
   <div class="row">
     <div class="col-xs-12">

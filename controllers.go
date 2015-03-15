@@ -27,10 +27,6 @@ type group struct {
 	Users []bson.ObjectId `json:"users"`
 }
 
-func groupsGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	executeWriterFromFile(w, "view/groups.html", &pongo2.Context{})
-}
-
 func groupListFilter(u *user) bson.M {
 	if u.HasPermission(ADMIN) {
 		return bson.M{}
@@ -471,20 +467,6 @@ func apiUserPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-}
-
-func userListHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	docdb := getDocDb(c)
-
-	users := []user{}
-
-	err := docdb.Db.C("users").Find(bson.M{}).All(&users)
-	if err != nil {
-		log.Fatal("!!!! find users", err)
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-
-	executeWriterFromFile(w, "view/users.html", &pongo2.Context{})
 }
 
 var config = gen.Sigil{

@@ -1,31 +1,28 @@
-{% extends "navbar.html" %}
+{% extends "admin.html" %}
 
-{% block title %} Add User {% endblock %}
+{% block admin_content %}
+<div ng-controller="UserAddCtrl as userCtrl">
+  <form accept-charset="ascii" ng-submit="userCtrl.addUser()">
+    <h2> Add User </h2>
+    <hr>
+    <div class="form-group">
+      <label for="name">User Name</label>
+      <input name="" type="text" class="form-control" id="name" placeholder="Name" ng-model="user.name"/>
+    </div>
+    <div class="form-group">
+      <label for="email">E-Mail</label>
+      <input name="" type="email" class="form-control" id="email" placeholder="E-Mail" ng-model="user.email"/>
+    </div>
 
-{% block content %}
-<div class="container" ng-controller="UserAddCtrl as userCtrl">
-  <div class="col-sm-offset-3 col-sm-6">
-    <form accept-charset="ascii" ng-submit="userCtrl.addUser()">
-      <h2> Add User </h2>
-      <div class="form-group">
-        <label for="name">User Name</label>
-        <input name="" type="text" class="form-control" id="name" placeholder="Name" ng-model="user.name"/>
-      </div>
-      <div class="form-group">
-        <label for="email">E-Mail</label>
-        <input name="" type="email" class="form-control" id="email" placeholder="E-Mail" ng-model="user.email"/>
-      </div>
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input name="" type="password" class="form-control" id="password" placeholder="Password" ng-model="user.password"/>
+      <input name="" type="password" class="form-control" value="" id="confirm" placeholder="Password Confirmation"/>
+    </div>
 
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input name="" type="password" class="form-control" id="password" placeholder="Password" ng-model="user.password"/>
-        <input name="" type="password" class="form-control" value="" id="confirm" placeholder="Password Confirmation"/>
-      </div>
-
-      <div class="form-group">
-        <input class="btn btn-primary" type="submit" value="Register">
-      </div>
-    </form>
-  </div>
+    <div class="form-group">
+      <input class="btn btn-primary" type="submit" value="Register">
+    </div>
+  </form>
 </div>
 {% endblock %}

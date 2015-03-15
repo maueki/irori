@@ -362,31 +362,12 @@ func markdownPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func addUserGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	err := executeWriterFromFile(w, "view/adduser.html", &pongo2.Context{})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func homeHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	err := executeWriterFromFile(w, "view/home.html", &pongo2.Context{})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func profileGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	err := executeWriterFromFile(w, "view/profile.html", &pongo2.Context{})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func profilePasswordHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	err := executeWriterFromFile(w, "view/profile-password.html", &pongo2.Context{})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+func staticPageHandler(path string) func(c web.C, w http.ResponseWriter, r *http.Request) {
+	return func(c web.C, w http.ResponseWriter, r *http.Request) {
+		err := executeWriterFromFile(w, path, &pongo2.Context{})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	}
 }
 
@@ -501,11 +482,12 @@ func setRoute(db *mgo.Database) {
 	adminMux := web.New()
 	adminMux.Use(needLogin)
 	adminMux.Use(needAdmin)
-	adminMux.Get("/admin/adduser", addUserGetHandler)
+	adminMux.Get("/admin/adduser", staticPageHandler("view/adduser.html"))
 	adminMux.Get("/admin/projects", projectsGetHandler)
-	adminMux.Get("/admin/groups", groupsGetHandler)
+	adminMux.Get("/admin/groups", staticPageHandler("view/groups.html"))
 	adminMux.Get("/admin/groups/:groupId", groupEditHandler)
-	adminMux.Get("/admin/users", userListHandler)
+	adminMux.Get("/admin/users", staticPageHandler("view/users.html"))
+	adminMux.Get("/admin", staticPageHandler("view/admin.html"))
 
 	apiMux := web.New()
 	apiMux.Use(needLogin)
@@ -544,12 +526,12 @@ func setRoute(db *mgo.Database) {
 
 	homeMux := web.New()
 	homeMux.Use(needLogin)
-	homeMux.Get("/home", homeHandler)
+	homeMux.Get("/home", staticPageHandler("view/home.html"))
 
 	profileMux := web.New()
 	profileMux.Use(needLogin)
-	profileMux.Get("/profile", profileGetHandler)
-	profileMux.Get("/profile/password/edit", profilePasswordHandler)
+	profileMux.Get("/profile", staticPageHandler("view/profile.html"))
+	profileMux.Get("/profile/password/edit", staticPageHandler("view/profile-password.html"))
 
 	goji.Use(includeDb(db))
 	goji.Get("/assets/*", http.FileServer(http.Dir(".")))
@@ -558,6 +540,7 @@ func setRoute(db *mgo.Database) {
 	goji.Handle("/markdown", mdMux)
 	goji.Handle("/action/*", loginUserActionMux)
 	goji.Handle("/admin/*", adminMux)
+	goji.Handle("/admin", adminMux)
 	goji.Handle("/api/*", apiMux)
 	goji.Handle("/profile", profileMux)
 	goji.Handle("/profile/*", profileMux)
