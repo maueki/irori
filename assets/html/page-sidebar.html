@@ -2,14 +2,14 @@
   <h3>Projects</h3>
   <ul class="project-list" ng-repeat="proj in projects">
     <li>
-      <input type="checkbox" name="projects" value="{$ proj.id $}">{$ proj.name $}</input>
+      <input type="checkbox" ng-model="proj.enabled">{$ proj.name $}</input>
     </li>
   </ul>
   <h3>Access Level</h3>
   <input type="radio" ng-model="page.access" value="public">Public <br/>
   <input type="radio" ng-model="page.access" value="group">Group <br/>
   <div class="group-list" ng-show="page.access=='group'" ng-repeat="group in groups">
-    <input name="" type="checkbox" ng-model="group.enabled">{$ group.name $}</input>
+    <input type="checkbox" ng-model="group.enabled">{$ group.name $}</input>
   </div>
   <input type="radio" ng-model="page.access" value="private">Private <br/>
 </nav>
