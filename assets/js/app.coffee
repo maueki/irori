@@ -39,6 +39,8 @@ app.controller 'PageCreateCtrl', [
         page.groups = (g.id for g in $scope.groups when g.enabled)
       page.$save().then (res) ->
         $window.location.href = '/wiki/' + res.id
+
+      page.projects = (p.id for p in $scope.projects when p.enabled)
   ]
 
 app.controller 'PageUpdateCtrl', [
@@ -52,7 +54,9 @@ app.controller 'PageUpdateCtrl', [
         page.groups = (g.id for g in $scope.groups when g.enabled)
       else
         page.groups = []
-      console.log page
+
+      page.projects = (p.id for p in $scope.projects when p.enabled)
+
       page.$save({pageId: page.id}).then (res) ->
         $window.location.href = '/wiki/' + res.id
 
@@ -62,6 +66,9 @@ app.controller 'PageUpdateCtrl', [
         for g in $scope.groups
           if g.id in page.groups
             g.enabled = true
+        for p in $scope.projects
+          if p.id in page.projects
+            p.enabled = true
   ]
 
 app.controller 'PageCtrl', [

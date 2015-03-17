@@ -2,8 +2,9 @@ body {
   overflow-y: auto;
 }
 
-.container .row{
-    margin-top: 10px;
+.content-wrapper {
+    margin-top: 30px;
+    padding-left: 50px;
 }
 
 .tab-panel {
