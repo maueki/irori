@@ -1,0 +1,37 @@
+{% extends "home.html" %}
+
+{% block home_content %}
+<div ng-controller="PageCtrl as pageCtrl">
+  <div class="row">
+    <a class="btn btn-lg btn-success" href="/action/createNewPage" role="button">新規作成</a>
+  </div>
+  <div role="tabpanel" class="tab-panel">
+    <ul class="nav nav-tabs" role="tablist">
+      <li role="presentation" class="active">
+        <a href="#all" aria-controlls="home" role="tab" data-toggle="tab">全て</a>
+      </li>
+      <li role="presentation">
+        <a href="#mine" aria-controlls="mine" role="tab" data-toggle="tab">自分の投稿</a>
+      </li>
+    </ul>
+    <div class="tab-content">
+      <div role="tabpanel" class="tab-pane active" id="all">
+        <div ng-repeat="page in pages">
+          <div class="page-summary">
+            <div class="page-author-icon"><img ng-src="/api/users/{$ page.author $}/icon" alt="author"></div>
+            <div class="page-info"><h1><a href="/wiki/{$ page.id $}">{$ page.article.title $}</a></h1></div>
+          </div>
+        </div>
+      </div>
+      <div role="tabpanel" class="tab-pane" id="mine">
+        <div ng-repeat="page in ownpages">
+          <div class="page-summary">
+            <div class="page-author-icon"><img ng-src="/api/users/{$ page.author $}/icon" alt="author"></div>
+            <div class="page-info"><h1><a href="/wiki/{$ page.id $}">{$ page.article.title $}</a></h1></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

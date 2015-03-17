@@ -526,7 +526,7 @@ func setRoute(db *mgo.Database) {
 
 	homeMux := web.New()
 	homeMux.Use(needLogin)
-	homeMux.Get("/home", staticPageHandler("view/home.html"))
+	homeMux.Get("/home", staticPageHandler("view/home-pages.html"))
 
 	profileMux := web.New()
 	profileMux.Use(needLogin)
