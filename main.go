@@ -453,9 +453,10 @@ func addTestData(db *mgo.Database) {
 		log.Fatalln(err)
 	}
 
+	adminHash, _ := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
 	admin := &user{
-		Name: "admin",
-		Password: []byte("$2a$10$yEuWec8ND/E6CoX3jsbfpu9nXX7PNH7ki6hwyb9RvqNm6ZPdjakCm"),
+		Name:        "admin",
+		Password:    adminHash,
 		Permissions: map[permission]bool{ADMIN: true, EDITOR: true},
 	}
 
