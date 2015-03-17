@@ -333,7 +333,7 @@ func apiPageListGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	var pages []page
 
-	err = docdb.Db.C("pages").Find(cond).Select(bson.M{"history": 0}).All(&pages)
+	err = docdb.Db.C("pages").Find(cond).Select(bson.M{"history": 0}).Sort("-article.date").All(&pages)
 	if err != nil {
 		log.Println("apiPageListGetHandler Find Failed: ", err)
 		w.WriteHeader(http.StatusInternalServerError)
