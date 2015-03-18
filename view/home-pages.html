@@ -19,8 +19,10 @@
         <div ng-repeat="page in pages">
           <div class="page-summary">
             <div class="page-author-icon"><img ng-src="/api/users/{$ page.author $}/icon" alt="author"></div>
-            <div class="page-action">{$ page.article.user.name $}により編集されました</div>
-            <div class="page-info"><h1><a href="/wiki/{$ page.id $}">{$ page.article.title $}</a></h1></div>
+            <div class="page-info">
+              <div class="page-action">{$ page.article.user.name $}により編集されました</div>
+              <h1><a href="/wiki/{$ page.id $}">{$ page.article.title $}</a></h1>
+            </div>
           </div>
         </div>
       </div>
