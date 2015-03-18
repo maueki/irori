@@ -377,6 +377,36 @@ func apiUserListGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 }
 
+func apiUserGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	docdb := getDocDb(c)
+	userId := bson.ObjectIdHex(c.URLParams["userId"])
+
+	if !userId.Valid() {
+		log.Println("apiUserListGetHandler: userId invalid")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	user := user{}
+	err := docdb.Db.C("users").FindId(userId).One(&user)
+	if err == mgo.ErrNotFound {
+		log.Println("apiUserListGetHandler: user not found:", userId.Hex())
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	// FIXME: remove detail info
+	js, err := json.Marshal(user)
+	if err != nil {
+		log.Println("apiUserListGetHandler: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
 func apiUserDeleteHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	uid := bson.ObjectIdHex(c.URLParams["userId"])
 	if !uid.Valid() {

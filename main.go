@@ -509,8 +509,9 @@ func setRoute(db *mgo.Database) {
 	apiMux.Get("/api/users", apiUserListGetHandler)
 	apiMux.Post("/api/users", apiUserPostHandler)
 	apiMux.Get("/api/users/icon", apiOwnIconHandler)
-	apiMux.Delete("/api/users/:userId", apiUserDeleteHandler)
 	apiMux.Get("/api/users/:userId/icon", apiUserIconHandler)
+	apiMux.Delete("/api/users/:userId", apiUserDeleteHandler)
+	apiMux.Get("/api/users/:userId", apiUserGetHandler)
 
 	apiMux.Put("/api/password", apiPasswordHandler)
 
