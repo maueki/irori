@@ -233,11 +233,6 @@ func apiPageCreateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func apiPageUpdateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	user := getSessionUser(c)
-	if !user.HasPermission(EDITOR) {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
 
 	defer r.Body.Close()
 	var p page

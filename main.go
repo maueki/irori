@@ -493,24 +493,24 @@ func setRoute(db *mgo.Database) {
 	apiMux := web.New()
 	apiMux.Use(needLogin)
 	apiMux.Get("/api/projects", apiProjectsGetHandler)
-	apiMux.Post("/api/projects", apiProjectsPostHandler)
+	apiMux.Post("/api/projects", mixin(apiProjectsPostHandler, apiNeedPermission(ADMIN)))
 
 	apiMux.Get("/api/pages/own", apiOwnPageGetHandler)
 	apiMux.Get("/api/pages/:pageId", apiPageGetHandler)
 	apiMux.Get("/api/pages", apiPageListGetHandler)
-	apiMux.Post("/api/pages/:pageId", apiPageUpdateHandler)
-	apiMux.Post("/api/pages", apiPageCreateHandler)
+	apiMux.Post("/api/pages/:pageId", mixin(apiPageUpdateHandler, apiNeedPermission(EDITOR)))
+	apiMux.Post("/api/pages", mixin(apiPageCreateHandler, apiNeedPermission(EDITOR)))
 
-	apiMux.Post("/api/groups", apiGroupCreateHandler)
+	apiMux.Post("/api/groups", mixin(apiGroupCreateHandler, apiNeedPermission(ADMIN)))
 	apiMux.Get("/api/groups/:groupId", apiGroupGetHandler)
-	apiMux.Put("/api/groups/:groupId", apiGroupPutHandler)
+	apiMux.Put("/api/groups/:groupId", mixin(apiGroupPutHandler, apiNeedPermission(ADMIN)))
 	apiMux.Get("/api/groups", apiGroupListGetHandler)
 
 	apiMux.Get("/api/users", apiUserListGetHandler)
-	apiMux.Post("/api/users", apiUserPostHandler)
+	apiMux.Post("/api/users", mixin(apiUserPostHandler, apiNeedPermission(ADMIN)))
 	apiMux.Get("/api/users/icon", apiOwnIconHandler)
 	apiMux.Get("/api/users/:userId/icon", apiUserIconHandler)
-	apiMux.Delete("/api/users/:userId", apiUserDeleteHandler)
+	apiMux.Delete("/api/users/:userId", mixin(apiUserDeleteHandler, apiNeedPermission(ADMIN)))
 	apiMux.Get("/api/users/:userId", apiUserGetHandler)
 
 	apiMux.Put("/api/password", apiPasswordHandler)
@@ -547,6 +547,41 @@ func setRoute(db *mgo.Database) {
 	goji.Handle("/profile", profileMux)
 	goji.Handle("/profile/*", profileMux)
 	goji.Handle("/*", m)
+}
+
+type handler func(web.C, http.ResponseWriter, *http.Request)
+type flavor func(web.C, http.ResponseWriter, *http.Request) bool
+
+func mixin_(h func(web.C, http.ResponseWriter, *http.Request), fs []flavor) handler {
+	if len(fs) == 0 {
+		return h
+	}
+
+	newhandler := func(c web.C, w http.ResponseWriter, r *http.Request) {
+		if fs[0](c, w, r) {
+			h(c, w, r)
+		}
+	}
+
+	return mixin_(newhandler, fs[1:])
+}
+
+
+func mixin(h handler, fs ...flavor) func(web.C, http.ResponseWriter, *http.Request) {
+	return (func(web.C, http.ResponseWriter, *http.Request))(mixin_(h, fs))
+}
+
+func apiNeedPermission(p permission) flavor {
+	return func(c web.C, w http.ResponseWriter, r *http.Request) bool {
+		user := getSessionUser(c)
+
+		if !user.HasPermission(p) {
+			w.WriteHeader(http.StatusUnauthorized)
+			return false
+		}
+
+		return true
+	}
 }
 
 func main() {
