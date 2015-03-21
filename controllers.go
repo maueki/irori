@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"strings"
 
 	"github.com/flosch/pongo2"
 	_ "github.com/flosch/pongo2-addons"
@@ -293,7 +294,9 @@ func apiOwnPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 }
 
-func pageCondition(u *user, db *docdb) (bson.M, error) {
+func pageQuery(r *http.Request, u *user, db *docdb) (bson.M, error) {
+	r.ParseForm()
+
 	var groups []group
 	err := db.Db.C("groups").Find(groupListFilter(u)).All(&groups)
 	if err != nil {
@@ -311,6 +314,20 @@ func pageCondition(u *user, db *docdb) (bson.M, error) {
 		bson.M{"groups": bson.M{"$in": gids}},
 	}}
 
+	if q := r.FormValue("q"); q != "" {
+		// FIXME: is sanitize necessary?
+		if qs := strings.Split(q, " "); len(qs) > 0 {
+			query := []interface{}{cond}
+			for _, s := range qs {
+				re := bson.M{"$regex": s}
+				query = append(query, bson.M{"$or": []interface{}{
+					bson.M{"article.title": re},
+					bson.M{"article.body": re}}})
+			}
+			cond = bson.M{"$and": query}
+		}
+	}
+
 	return cond, nil
 
 }
@@ -319,7 +336,7 @@ func apiPageListGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	docdb := getDocDb(c)
 	user := getSessionUser(c)
 
-	cond, err := pageCondition(user, docdb)
+	cond, err := pageQuery(r, user, docdb)
 	if err != nil {
 		log.Println("apiPageListGetHandler Failed: ", err)
 		w.WriteHeader(http.StatusInternalServerError)
