@@ -21,7 +21,7 @@ import (
 
 var ErrUserNotFound = errors.New("user not found")
 
-const SESSION_NAME = "go_wiki_session"
+const SESSION_NAME = "irori_session"
 
 var store = sessions.NewCookieStore([]byte("something-very-secret")) // FIXME
 
@@ -518,8 +518,8 @@ func setRoute(db *mgo.Database) {
 	// Mux : create new page or show a page created already
 	pageMux := web.New()
 	pageMux.Use(needLogin)
-	pageMux.Get("/wiki/:pageId", viewPageGetHandler)
-	pageMux.Get("/wiki/:pageId/edit", editPageGetHandler)
+	pageMux.Get("/docs/:pageId", viewPageGetHandler)
+	pageMux.Get("/docs/:pageId/edit", editPageGetHandler)
 
 	// Mux : convert Markdown to HTML which is send by Ajax
 	mdMux := web.New()
@@ -537,7 +537,7 @@ func setRoute(db *mgo.Database) {
 
 	goji.Use(includeDb(db))
 	goji.Get("/assets/*", http.FileServer(http.Dir(".")))
-	goji.Handle("/wiki/*", pageMux)
+	goji.Handle("/docs/*", pageMux)
 	goji.Handle("/home", homeMux)
 	goji.Handle("/markdown", mdMux)
 	goji.Handle("/action/*", loginUserActionMux)
