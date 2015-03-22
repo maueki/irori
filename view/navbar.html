@@ -22,6 +22,13 @@
       <li><a class="icon-irori" href="/home"></a></li>
     </ul>
     <ul class="nav navbar-nav navbar-right">
+      <li>
+        <form class="navbar-form" role="search" ng-submit="navCtrl.submit()" ng-controller="NavbarCtrl as navCtrl">
+          <div class="form-group">
+            <input class="form-control" ng-model="inputquery" type="text" value="" placeholder="Search"/>
+          </div>
+        </form>
+      </li>
       <li><a href="/action/createNewPage">記事作成</a></li>
       <li class="dropdown">
       <a class="dropdown-toggle" data-toggle="dropdown" href="#"><img class="user-icon" src="/api/users/icon"/><span class="caret"></span></a>

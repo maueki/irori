@@ -79,6 +79,15 @@ app.controller 'PageCtrl', [
     $scope.ownpages = Page.query({pageId:'own'})
   ]
 
+app.controller 'PageSearchCtrl', [
+  'Page', 'User', '$window', '$scope', (Page, User, $window, $scope) ->
+
+    $scope.init = (query) ->
+      $scope.pages = Page.query {q: query },  (pages) ->
+        for page in pages
+          page.article.user = User.get {userId: page.article.userId}
+  ]
+
 app.directive 'pageEditor', () ->
   {
     restrict: 'E'
@@ -184,3 +193,11 @@ app.controller 'UserPasswordController', [
         ,() ->
           alert('パスワードの更新に失敗しました')
   ]
+
+app.controller 'NavbarCtrl', [
+  '$scope', '$window', ($scope, $window)->
+    this.submit = () ->
+      if $scope.inputquery.length != 0
+        $window.location.href = '/docs?q=' + $scope.inputquery
+  ]
+
