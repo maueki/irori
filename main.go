@@ -21,7 +21,7 @@ import (
 
 var ErrUserNotFound = errors.New("user not found")
 
-const SESSION_NAME = "go_wiki_session"
+const SESSION_NAME = "irori_session"
 
 var store = sessions.NewCookieStore([]byte("something-very-secret")) // FIXME
 
@@ -286,6 +286,23 @@ func editPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func searchPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	q := r.FormValue("q")
+	if q == "" {
+		http.Redirect(w, r, "/home", http.StatusSeeOther)
+		return
+	}
+
+	log.Println("query:", q)
+
+	err := executeWriterFromFile(w, "view/search.html", &pongo2.Context{"query": q})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 func getDocDb(c web.C) *docdb { return c.Env["docdb"].(*docdb) }
 
 func HashPassword(password string) []byte {
@@ -518,8 +535,9 @@ func setRoute(db *mgo.Database) {
 	// Mux : create new page or show a page created already
 	pageMux := web.New()
 	pageMux.Use(needLogin)
-	pageMux.Get("/wiki/:pageId", viewPageGetHandler)
-	pageMux.Get("/wiki/:pageId/edit", editPageGetHandler)
+	pageMux.Get("/docs", searchPageGetHandler)
+	pageMux.Get("/docs/:pageId", viewPageGetHandler)
+	pageMux.Get("/docs/:pageId/edit", editPageGetHandler)
 
 	// Mux : convert Markdown to HTML which is send by Ajax
 	mdMux := web.New()
@@ -537,7 +555,8 @@ func setRoute(db *mgo.Database) {
 
 	goji.Use(includeDb(db))
 	goji.Get("/assets/*", http.FileServer(http.Dir(".")))
-	goji.Handle("/wiki/*", pageMux)
+	goji.Handle("/docs/*", pageMux)
+	goji.Handle("/docs", pageMux)
 	goji.Handle("/home", homeMux)
 	goji.Handle("/markdown", mdMux)
 	goji.Handle("/action/*", loginUserActionMux)

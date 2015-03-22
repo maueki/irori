@@ -1,12 +1,12 @@
-Irori
+irori
 ======
 
 [![Stories in Ready](https://badge.waffle.io/maueki/irori.png?label=ready&title=Ready)](https://waffle.io/maueki/irori)
 [![Build Status](https://travis-ci.org/maueki/irori.svg)](https://travis-ci.org/maueki/irori)
 
-# What's Irori
+# What's irori
 
-A simple and small knowledge sharing system like wiki.
+A simple and small knowledge sharing web application.
 
 # Requirements
 

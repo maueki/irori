@@ -38,7 +38,7 @@ app.controller 'PageCreateCtrl', [
       if page.access == "group"
         page.groups = (g.id for g in $scope.groups when g.enabled)
       page.$save().then (res) ->
-        $window.location.href = '/wiki/' + res.id
+        $window.location.href = '/docs/' + res.id
 
       page.projects = (p.id for p in $scope.projects when p.enabled)
   ]
@@ -58,7 +58,7 @@ app.controller 'PageUpdateCtrl', [
       page.projects = (p.id for p in $scope.projects when p.enabled)
 
       page.$save({pageId: page.id}).then (res) ->
-        $window.location.href = '/wiki/' + res.id
+        $window.location.href = '/docs/' + res.id
 
     this.load = (id) ->
       $scope.page = Page.get {'pageId': id}
@@ -77,6 +77,15 @@ app.controller 'PageCtrl', [
       for page in pages
         page.article.user = User.get {userId: page.article.userId}
     $scope.ownpages = Page.query({pageId:'own'})
+  ]
+
+app.controller 'PageSearchCtrl', [
+  'Page', 'User', '$window', '$scope', (Page, User, $window, $scope) ->
+
+    $scope.init = (query) ->
+      $scope.pages = Page.query {q: query },  (pages) ->
+        for page in pages
+          page.article.user = User.get {userId: page.article.userId}
   ]
 
 app.directive 'pageEditor', () ->
@@ -184,3 +193,11 @@ app.controller 'UserPasswordController', [
         ,() ->
           alert('パスワードの更新に失敗しました')
   ]
+
+app.controller 'NavbarCtrl', [
+  '$scope', '$window', ($scope, $window)->
+    this.submit = () ->
+      if $scope.inputquery.length != 0
+        $window.location.href = '/docs?q=' + $scope.inputquery
+  ]
+
