@@ -97,6 +97,7 @@ app.directive 'pageEditor', () ->
       setLeavingMessage('You\'re about to throw away this text without posting it.')
 
       timer = null
+      hljs.initHighlightingOnLoad()
 
       scope.sendText = () ->
         $.ajax
@@ -105,7 +106,9 @@ app.directive 'pageEditor', () ->
           data:
             text: $('#body-editor')[0].value
           success: (data) ->
-            $('#output', element).html(data) 
+            $('#output', element).html(data)
+            $("pre code", $("#output")).each (i, e) ->
+              hljs.highlightBlock(e)
 
       scope.$watch 'page.article.body', (value) ->
         clearTimeout timer
