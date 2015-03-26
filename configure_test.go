@@ -17,7 +17,9 @@ smtp_settings = {
 
 // member name and hcl name must be same (ignore case)
 type MainConfig struct {
-	HostName string
+	HostName    string
+	NotExistStr string
+	NotExistInt int
 }
 
 type Smtp struct {
@@ -42,7 +44,15 @@ func TestConfigure(t *testing.T) {
 	readConfigStr(configStr)
 
 	if mainConfig.HostName != "test host name" {
-		t.Error("unexpected", mainConfig.HostName)
+		t.Error("HostName unexpected", mainConfig.HostName)
+	}
+
+	if mainConfig.NotExistStr != "" {
+		t.Error("NotExistStr unexpected", mainConfig.NotExistStr)
+	}
+
+	if mainConfig.NotExistInt != 0 {
+		t.Error("NotExistInt unexpected", mainConfig.NotExistInt)
 	}
 
 	s := &smtpSettings.Smtp_Settings

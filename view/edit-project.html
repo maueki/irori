@@ -1,0 +1,22 @@
+{% extends "admin.html" %}
+
+{% block admin_content %}
+
+ <div class="container" ng-controller="ProjectEditCtrl as ctrl" ng-init="ctrl.load('{{ projectId }}');">
+  <div class="col-sm-offset-3 col-sm-6">
+    <form ng-submit="ctrl.submit()">
+      <h1>Project {$ project.name $} </h1>
+      <div class="form-group">
+        <label for="projectname">Project Name</label>
+        <input class="form-control" id="projectname" type="text" ng-model="project.name"/>
+      </div>
+      <div class="form-group">
+        <label for="slackurl">Slack URL</label>
+        <input class="form-control" id="slackurl" type="text" ng-model="project.slackurl"/>
+      </div>
+      <button type="submit" class="btn btn-primary pull-left">Save</button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

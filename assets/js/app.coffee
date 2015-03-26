@@ -8,7 +8,8 @@ app.config ($interpolateProvider) ->
 
 app.factory 'Project', [
   '$resource', ($resource) ->
-    $resource '/api/projects', {}, {
+    $resource '/api/projects/:projectId', {projectId: '@id'}, {
+      update: {method: 'PUT'}
     }]
 
 app.controller 'ProjectsCtrl', [
@@ -21,6 +22,16 @@ app.controller 'ProjectsCtrl', [
       console.log("addProject: ", $scope.project)
       $scope.project.$save () ->
         $scope.projects = Project.query()
+  ]
+
+app.controller 'ProjectEditCtrl', [
+  'Project', '$window', '$scope', (Project, $window, $scope) ->
+    this.load = (id) ->
+      $scope.project = Project.get({'projectId': id})
+
+    this.submit = () ->
+      $scope.project.$update().then () ->
+        $window.location.href = '/admin/projects'
   ]
 
 app.factory 'Page', [
