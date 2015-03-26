@@ -16,16 +16,31 @@ body {
     border-bottom: solid 1px #ddd;
 }
 
-.page-summary .page-author-icon {
+.page-summary .icon-box {
     width: 40px;
     height: 40px;
     display: inline-block;
     vertical-align: top;
+    position: relative;
 }
 
-.page-summary .page-author-icon img {
-    width: 40px;
-    height: 40px;
+.page-summary .icon-box .page-author-icon img{
+    position: absolute;
+    left: 0;
+    top: 0;
+
+    width: 28px;
+    height: 28px;
+}
+
+.page-summary .icon-box .page-action-icon img{
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    
+    width: 20px;
+    height: 20px;
 }
 
 .page-summary .page-info {

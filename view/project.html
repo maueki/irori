@@ -1,0 +1,27 @@
+{% extends "navbar.html" %}
+
+{% block title %} Project {% endblock %}
+
+{% block posthead_main %}
+<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+<link href="/assets/css/sidebar.css" rel="stylesheet">
+<link href="/assets/css/home.css" rel="stylesheet">
+
+{% block project_content_head %}{% endblock %}
+
+{% endblock %}
+
+{% block content %}
+
+<div class="col-md-2 sidebar-wrapper">
+  <ul class="nav nav-sidebar">
+    <li><a href=""><i class="fa fa-dashboard"></i><span>Project</span></a></li>
+  </ul>
+</div>
+
+<div class="col-md-10 col-md-offset-2 content-wrapper">
+{% block project_content %}
+{% endblock %}
+</div>
+
+{% endblock %}

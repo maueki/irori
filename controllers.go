@@ -7,8 +7,8 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"time"
 	"strings"
+	"time"
 
 	"github.com/flosch/pongo2"
 	_ "github.com/flosch/pongo2-addons"
@@ -21,6 +21,13 @@ import (
 
 	"code.google.com/p/go.crypto/bcrypt"
 )
+
+type pageHook interface {
+	onCreate(p page)
+	onUpdate(p page)
+}
+
+var pageHooks []pageHook
 
 type group struct {
 	Id    bson.ObjectId   `bson:"_id,omitempty" json:"id,omitempty"`
@@ -151,10 +158,10 @@ func groupEditHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	executeWriterFromFile(w, "view/edit-group.html", &pongo2.Context{"groupid": groupId})
+	executeWriterFromFile(w, "view/edit-group.html", &pongo2.Context{"groupid": objid.Hex()})
 }
 
-func apiProjectsGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+func apiProjectListGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	docdb := getDocDb(c)
 
 	projects := []project{}
@@ -171,6 +178,73 @@ func apiProjectsGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
+func apiProjectGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	//FIXME: check credential
+
+	pid := bson.ObjectIdHex(c.URLParams["projectId"])
+
+	if !pid.Valid() {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	docdb := getDocDb(c)
+
+	var project project
+	err := docdb.Db.C("projects").FindId(pid).One(&project)
+	if err == mgo.ErrNotFound {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	} else if err != nil {
+		log.Fatal(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	js, _ := json.Marshal(project)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
+func projectEditHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	pId := c.URLParams["projectId"]
+
+	objid := bson.ObjectIdHex(pId)
+	if !objid.Valid() {
+		log.Println("invalid projectId:", pId)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	executeWriterFromFile(w, "view/edit-project.html", &pongo2.Context{"projectId": objid.Hex()})
+}
+
+func apiProjectPutHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	docdb := getDocDb(c)
+
+	projectId := bson.ObjectIdHex(c.URLParams["projectId"])
+
+	defer r.Body.Close()
+	var p project
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+		log.Println("apiPrjectPutHandler failed to parse json: ", r.Body)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// TODO: verify incomming
+
+	err := docdb.Db.C("projects").UpdateId(projectId, p)
+	if err != nil {
+		log.Println("apiProjectPutHandler update db error: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	js, _ := json.Marshal(p)
 	w.Write(js)
 }
 
@@ -231,10 +305,13 @@ func apiPageCreateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
+
+	for _, h := range pageHooks {
+		h.onCreate(p)
+	}
 }
 
 func apiPageUpdateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-
 	defer r.Body.Close()
 	var p page
 
@@ -253,6 +330,10 @@ func apiPageUpdateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
+
+	for _, h := range pageHooks {
+		h.onUpdate(p)
+	}
 }
 
 func apiPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -498,7 +579,7 @@ func apiUserPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-var config = gen.Sigil{
+var sigilconfig = gen.Sigil{
 	Rows: 5,
 	Foreground: []color.NRGBA{
 		rgb(45, 79, 255),
@@ -519,7 +600,7 @@ func writeDefaultIcon(w http.ResponseWriter, id bson.ObjectId) {
 	io.WriteString(h, id.Hex())
 
 	w.Header().Set("Content-Type", "image/svg+xml")
-	config.MakeSVG(w, 250, false, h.Sum(nil))
+	sigilconfig.MakeSVG(w, 250, false, h.Sum(nil))
 }
 
 func apiOwnIconHandler(c web.C, w http.ResponseWriter, r *http.Request) {

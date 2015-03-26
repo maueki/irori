@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"code.google.com/p/go.crypto/bcrypt"
@@ -77,8 +78,9 @@ type user struct {
 }
 
 type project struct {
-	Id   bson.ObjectId `bson:"_id,omitempty" json:"id,omitempty"`
-	Name string        `json:"name"`
+	Id       bson.ObjectId `bson:"_id,omitempty" json:"id,omitempty"`
+	Name     string        `json:"name"`
+	SlackURL string        `bson:"slackurl,omitempty" json:"slackurl,omitempty"`
 }
 
 func (u *user) HasPermission(perm permission) bool {
@@ -502,6 +504,7 @@ func setRoute(db *mgo.Database) {
 	adminMux.Use(needAdmin)
 	adminMux.Get("/admin/adduser", staticPageHandler("view/adduser.html"))
 	adminMux.Get("/admin/projects", staticPageHandler("view/projects.html"))
+	adminMux.Get("/admin/projects/:projectId", projectEditHandler)
 	adminMux.Get("/admin/groups", staticPageHandler("view/groups.html"))
 	adminMux.Get("/admin/groups/:groupId", groupEditHandler)
 	adminMux.Get("/admin/users", staticPageHandler("view/users.html"))
@@ -509,7 +512,9 @@ func setRoute(db *mgo.Database) {
 
 	apiMux := web.New()
 	apiMux.Use(needLogin)
-	apiMux.Get("/api/projects", apiProjectsGetHandler)
+	apiMux.Get("/api/projects", apiProjectListGetHandler)
+	apiMux.Get("/api/projects/:projectId", apiProjectGetHandler)
+	apiMux.Put("/api/projects/:projectId", mixin(apiProjectPutHandler, apiNeedPermission(ADMIN)))
 	apiMux.Post("/api/projects", mixin(apiProjectsPostHandler, apiNeedPermission(ADMIN)))
 
 	apiMux.Get("/api/pages/own", apiOwnPageGetHandler)
@@ -548,6 +553,10 @@ func setRoute(db *mgo.Database) {
 	homeMux.Use(needLogin)
 	homeMux.Get("/home", staticPageHandler("view/home-pages.html"))
 
+	projectMux := web.New()
+	projectMux.Use(needLogin)
+	projectMux.Get("/project/:projectId", staticPageHandler("view/project.html"))
+
 	profileMux := web.New()
 	profileMux.Use(needLogin)
 	profileMux.Get("/profile", staticPageHandler("view/profile.html"))
@@ -558,6 +567,7 @@ func setRoute(db *mgo.Database) {
 	goji.Handle("/docs/*", pageMux)
 	goji.Handle("/docs", pageMux)
 	goji.Handle("/home", homeMux)
+	goji.Handle("/project/*", projectMux)
 	goji.Handle("/markdown", mdMux)
 	goji.Handle("/action/*", loginUserActionMux)
 	goji.Handle("/admin/*", adminMux)
@@ -585,7 +595,6 @@ func mixin_(h func(web.C, http.ResponseWriter, *http.Request), fs []flavor) hand
 	return mixin_(newhandler, fs[1:])
 }
 
-
 func mixin(h handler, fs ...flavor) func(web.C, http.ResponseWriter, *http.Request) {
 	return (func(web.C, http.ResponseWriter, *http.Request))(mixin_(h, fs))
 }
@@ -603,8 +612,36 @@ func apiNeedPermission(p permission) flavor {
 	}
 }
 
-func main() {
+type iroriconfig struct {
+	HostName string
+	Port     int
+}
+
+var IroriConfig iroriconfig
+
+func Initialize() {
+
+	AddDecoder(&IroriConfig)
 	ReadConfig()
+
+	hostname := os.Getenv("IRORI_HOSTNAME")
+	if hostname != "" {
+		IroriConfig.HostName = hostname
+	}
+	if IroriConfig.HostName == "" {
+		IroriConfig.HostName = "localhost"
+	}
+
+	port, err := strconv.Atoi(os.Getenv("IRORI_PORT"))
+	if err != nil && port != 0 {
+		IroriConfig.Port = port
+	}
+
+	log.Println(IroriConfig)
+}
+
+func main() {
+	Initialize()
 
 	url := os.Getenv("MONGODB_URL")
 	if url == "" {
@@ -620,6 +657,8 @@ func main() {
 	session.SetMode(mgo.Monotonic, true)
 
 	db := session.DB("")
+
+	pageHooks = append(pageHooks, pageHookSlack{db: db})
 
 	setRoute(db)
 
