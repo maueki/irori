@@ -307,7 +307,7 @@ func apiPageCreateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 
 	for _, h := range pageHooks {
-		h.onCreate(p)
+		go h.onCreate(p)
 	}
 }
 
@@ -332,7 +332,7 @@ func apiPageUpdateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 
 	for _, h := range pageHooks {
-		h.onUpdate(p)
+		go h.onUpdate(p)
 	}
 }
 
