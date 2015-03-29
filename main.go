@@ -514,25 +514,25 @@ func setRoute(db *mgo.Database) {
 	apiMux.Use(needLogin)
 	apiMux.Get("/api/projects", apiProjectListGetHandler)
 	apiMux.Get("/api/projects/:projectId", apiProjectGetHandler)
-	apiMux.Put("/api/projects/:projectId", mixin(apiProjectPutHandler, apiNeedPermission(ADMIN)))
-	apiMux.Post("/api/projects", mixin(apiProjectsPostHandler, apiNeedPermission(ADMIN)))
+	apiMux.Put("/api/projects/:projectId", applyFilter(apiProjectPutHandler, apiNeedPermission(ADMIN)))
+	apiMux.Post("/api/projects", applyFilter(apiProjectsPostHandler, apiNeedPermission(ADMIN)))
 
 	apiMux.Get("/api/pages/own", apiOwnPageGetHandler)
 	apiMux.Get("/api/pages/:pageId", apiPageGetHandler)
 	apiMux.Get("/api/pages", apiPageListGetHandler)
-	apiMux.Post("/api/pages/:pageId", mixin(apiPageUpdateHandler, apiNeedPermission(EDITOR)))
-	apiMux.Post("/api/pages", mixin(apiPageCreateHandler, apiNeedPermission(EDITOR)))
+	apiMux.Post("/api/pages/:pageId", applyFilter(apiPageUpdateHandler, apiNeedPermission(EDITOR)))
+	apiMux.Post("/api/pages", applyFilter(apiPageCreateHandler, apiNeedPermission(EDITOR)))
 
-	apiMux.Post("/api/groups", mixin(apiGroupCreateHandler, apiNeedPermission(ADMIN)))
+	apiMux.Post("/api/groups", applyFilter(apiGroupCreateHandler, apiNeedPermission(ADMIN)))
 	apiMux.Get("/api/groups/:groupId", apiGroupGetHandler)
-	apiMux.Put("/api/groups/:groupId", mixin(apiGroupPutHandler, apiNeedPermission(ADMIN)))
+	apiMux.Put("/api/groups/:groupId", applyFilter(apiGroupPutHandler, apiNeedPermission(ADMIN)))
 	apiMux.Get("/api/groups", apiGroupListGetHandler)
 
 	apiMux.Get("/api/users", apiUserListGetHandler)
-	apiMux.Post("/api/users", mixin(apiUserPostHandler, apiNeedPermission(ADMIN)))
+	apiMux.Post("/api/users", applyFilter(apiUserPostHandler, apiNeedPermission(ADMIN)))
 	apiMux.Get("/api/users/icon", apiOwnIconHandler)
 	apiMux.Get("/api/users/:userId/icon", apiUserIconHandler)
-	apiMux.Delete("/api/users/:userId", mixin(apiUserDeleteHandler, apiNeedPermission(ADMIN)))
+	apiMux.Delete("/api/users/:userId", applyFilter(apiUserDeleteHandler, apiNeedPermission(ADMIN)))
 	apiMux.Get("/api/users/:userId", apiUserGetHandler)
 
 	apiMux.Put("/api/password", apiPasswordHandler)
@@ -578,10 +578,9 @@ func setRoute(db *mgo.Database) {
 	goji.Handle("/*", m)
 }
 
-type handler func(web.C, http.ResponseWriter, *http.Request)
-type flavor func(web.C, http.ResponseWriter, *http.Request) bool
+type handleFilter func(web.C, http.ResponseWriter, *http.Request) bool
 
-func mixin_(h func(web.C, http.ResponseWriter, *http.Request), fs []flavor) handler {
+func applyFilter_(h web.HandlerFunc, fs []handleFilter) web.HandlerFunc {
 	if len(fs) == 0 {
 		return h
 	}
@@ -592,14 +591,14 @@ func mixin_(h func(web.C, http.ResponseWriter, *http.Request), fs []flavor) hand
 		}
 	}
 
-	return mixin_(newhandler, fs[1:])
+	return applyFilter_(newhandler, fs[1:])
 }
 
-func mixin(h handler, fs ...flavor) func(web.C, http.ResponseWriter, *http.Request) {
-	return (func(web.C, http.ResponseWriter, *http.Request))(mixin_(h, fs))
+func applyFilter(h web.HandlerFunc, fs ...handleFilter) web.HandlerFunc {
+	return applyFilter_(h, fs)
 }
 
-func apiNeedPermission(p permission) flavor {
+func apiNeedPermission(p permission) handleFilter {
 	return func(c web.C, w http.ResponseWriter, r *http.Request) bool {
 		user := getSessionUser(c)
 
