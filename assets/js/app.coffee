@@ -87,7 +87,9 @@ app.controller 'PageCtrl', [
     $scope.pages = Page.query (pages) ->
       for page in pages
         page.article.user = User.get {userId: page.article.userId}
-    $scope.ownpages = Page.query({pageId:'own'})
+    $scope.ownpages = Page.query {pageId:'own'}, (pages)->
+      for page in pages
+        page.article.user = User.get {userId: page.article.userId}
   ]
 
 app.controller 'PageSearchCtrl', [
@@ -124,6 +126,12 @@ app.directive 'pageEditor', () ->
       scope.$watch 'page.article.body', (value) ->
         clearTimeout timer
         timer = setTimeout scope.sendText, 2000
+  }
+
+app.directive 'pageInfo', () ->
+  {
+    restrict: 'E'
+    templateUrl: '/assets/html/page-info.html'
   }
 
 app.directive 'pageSidebar', () ->
