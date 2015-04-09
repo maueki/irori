@@ -44,13 +44,11 @@ func groupListFilter(u *user) bson.M {
 }
 
 func apiGroupListGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	u := getSessionUser(c)
-
 	docdb := getDocDb(c)
 
 	groups := []group{}
 
-	err := docdb.Db.C("groups").Find(groupListFilter(u)).All(&groups)
+	err := docdb.Db.C("groups").Find(bson.M{}).All(&groups)
 	if err != nil {
 		log.Fatal("!!!!! get groups")
 		w.WriteHeader(http.StatusInternalServerError)
