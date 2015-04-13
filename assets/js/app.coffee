@@ -134,15 +134,18 @@ app.directive 'pageInfo', () ->
     templateUrl: '/assets/html/page-info.html'
   }
 
-app.directive 'pageSidebar', () ->
+app.directive 'pageSidebar', ['User', (User) ->
   {
     restrict: 'E'
     templateUrl: '/assets/html/page-sidebar.html'
-  }
+    link: (scope, element) ->
+      scope.myself = User.getOwn()
+  }]
 
 app.factory 'User', [
   '$resource', ($resource) ->
-    $resource '/api/users/:userId', {Id: '@userId'}, {
+    $resource '/api/users/:userId', {userId: '@id'}, {
+      getOwn: {method: 'GET', params: {userId: 'own'}}
     }]
 
 app.factory 'Group', [

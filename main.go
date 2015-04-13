@@ -530,6 +530,7 @@ func setRoute(db *mgo.Database) {
 
 	apiMux.Get("/api/users", apiUserListGetHandler)
 	apiMux.Post("/api/users", applyFilter(apiUserPostHandler, apiNeedPermission(ADMIN)))
+	apiMux.Get("/api/users/own", apiOwnUserGetHandler)
 	apiMux.Get("/api/users/icon", apiOwnIconHandler)
 	apiMux.Get("/api/users/:userId/icon", apiUserIconHandler)
 	apiMux.Delete("/api/users/:userId", applyFilter(apiUserDeleteHandler, apiNeedPermission(ADMIN)))

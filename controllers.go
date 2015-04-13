@@ -498,6 +498,19 @@ func apiUserGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 }
 
+func apiOwnUserGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	user := getSessionUser(c)
+	js, err := json.Marshal(user)
+	if err != nil {
+		log.Println("apiOwnUserGetHandler: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
 func apiUserDeleteHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	uid := bson.ObjectIdHex(c.URLParams["userId"])
 	if !uid.Valid() {

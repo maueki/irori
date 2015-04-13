@@ -11,5 +11,6 @@
   <div class="group-list" ng-show="page.access=='group'" ng-repeat="group in groups">
     <input type="checkbox" ng-model="group.enabled">{$ group.name $}</input>
   </div>
-  <input type="radio" ng-model="page.access" value="private">Private <br/>
+  <div ng-show="!page.author || myself.id==page.author">
+  <input type="radio" ng-model="page.access" value="private" >Private</div> <br/>
 </nav>
