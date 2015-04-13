@@ -580,8 +580,9 @@ func setRoute(db *mgo.Database) {
 }
 
 type handleFilter func(web.C, http.ResponseWriter, *http.Request) bool
+type handlerFunc func(web.C, http.ResponseWriter, *http.Request)
 
-func applyFilter_(h web.HandlerFunc, fs []handleFilter) web.HandlerFunc {
+func applyFilter_(h handlerFunc, fs []handleFilter) handlerFunc {
 	if len(fs) == 0 {
 		return h
 	}
@@ -595,7 +596,7 @@ func applyFilter_(h web.HandlerFunc, fs []handleFilter) web.HandlerFunc {
 	return applyFilter_(newhandler, fs[1:])
 }
 
-func applyFilter(h web.HandlerFunc, fs ...handleFilter) web.HandlerFunc {
+func applyFilter(h handlerFunc, fs ...handleFilter) handlerFunc {
 	return applyFilter_(h, fs)
 }
 
