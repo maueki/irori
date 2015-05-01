@@ -243,7 +243,7 @@ func viewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	// genarate html
 	pongoCtx := pongo2.Context{
 		"loginuser":  user,
-		"page":       page,
+		"pageid":     page.Id.Hex(),
 		"edittime":   edittime.Format("2006/01/02 15:04"),
 		"editeduser": editeduser}
 
@@ -518,6 +518,7 @@ func setRoute(db *mgo.Database) {
 	apiMux.Post("/api/projects", applyFilter(apiProjectsPostHandler, apiNeedPermission(ADMIN)))
 
 	apiMux.Get("/api/pages/own", apiOwnPageGetHandler)
+	apiMux.Get("/api/pages/:pageId/body", apiPageBodyGetHandler)
 	apiMux.Get("/api/pages/:pageId", apiPageGetHandler)
 	apiMux.Get("/api/pages", apiPageListGetHandler)
 	apiMux.Post("/api/pages/:pageId", applyFilter(apiPageUpdateHandler, apiNeedPermission(EDITOR)))
@@ -580,9 +581,8 @@ func setRoute(db *mgo.Database) {
 }
 
 type handleFilter func(web.C, http.ResponseWriter, *http.Request) bool
-type handlerFunc func(web.C, http.ResponseWriter, *http.Request)
 
-func applyFilter_(h handlerFunc, fs []handleFilter) handlerFunc {
+func applyFilter_(h func(web.C, http.ResponseWriter, *http.Request), fs []handleFilter) func(web.C, http.ResponseWriter, *http.Request) {
 	if len(fs) == 0 {
 		return h
 	}
@@ -596,7 +596,7 @@ func applyFilter_(h handlerFunc, fs []handleFilter) handlerFunc {
 	return applyFilter_(newhandler, fs[1:])
 }
 
-func applyFilter(h handlerFunc, fs ...handleFilter) handlerFunc {
+func applyFilter(h func(web.C, http.ResponseWriter, *http.Request), fs ...handleFilter) func(web.C, http.ResponseWriter, *http.Request) {
 	return applyFilter_(h, fs)
 }
 

@@ -1,5 +1,5 @@
 
-app = angular.module 'irori', ['ngResource', 'ngMessages', 'ui.utils']
+app = angular.module 'irori', ['ngResource', 'ngMessages', 'ui.utils', 'ngSanitize']
 
 # In AngularJS, Use '{$ $}' instead of '{{ }}' that is used by pongo2.
 app.config ($interpolateProvider) ->
@@ -99,6 +99,20 @@ app.controller 'PageSearchCtrl', [
       $scope.pages = Page.query {q: query },  (pages) ->
         for page in pages
           page.article.user = User.get {userId: page.article.userId}
+  ]
+
+app.controller 'PageViewCtrl', [
+  'Page', 'User', '$window', '$scope', (Page, User, $window, $scope) ->
+    this.load = (id) ->
+      hljs.initHighlightingOnLoad()
+      $scope.page = Page.get {'pageId': id}
+      $.ajax
+        type: 'GET'
+        url: '/api/pages/' + id + '/body'
+        success: (data) ->
+          $('#pagebody').html(data)
+          $('pre code', $('#pagebody')).each (i, e) ->
+            hljs.highlightBlock(e)
   ]
 
 app.directive 'pageEditor', () ->
