@@ -13,6 +13,7 @@ A simple and small knowledge sharing web application.
 * Go (1.4 or later)
 * MongoDB
 * coffee-script
+* mercurial
 
 # build & start
 
