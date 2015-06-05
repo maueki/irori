@@ -1,13 +1,21 @@
 
-GOSRC=$(wildcard *.go)
+GOSRCDIR=./src
 COFFEEDIR=assets/js
 COFFEESRC=$(wildcard $(COFFEEDIR)/*.coffee)
+
+
+ifeq ($(OS),Windows_NT)
+IRORI_BINNAME=irori.exe
+else
+IRORI_BINNAME=irori
+endif
 
 .PHONY: all coffee test
 all: irori coffee
 
-irori: $(GOSRC)
-	go get -d -v ./... && go build -v .
+irori:
+	go get -d -v $(GOSRCDIR)
+	go build -v -o $(IRORI_BINNAME) $(GOSRCDIR)
 
 coffee: $(COFFEESRC)
 	coffee -o $(COFFEEDIR) -c $^
@@ -17,4 +25,4 @@ clean:
 	rm -f $(COFFEEDIR)/*.js
 
 test:
-	go test .
+	go test $(GOSRCDIR)
