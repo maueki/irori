@@ -9,13 +9,13 @@ import (
 	"strconv"
 	"time"
 
-	"code.google.com/p/go.crypto/bcrypt"
 	"github.com/bkaradzic/go-lz4"
 	"github.com/flosch/pongo2"
 	_ "github.com/flosch/pongo2-addons"
 	"github.com/gorilla/sessions"
 	"github.com/zenazn/goji"
 	"github.com/zenazn/goji/web"
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
