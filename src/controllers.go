@@ -19,7 +19,7 @@ import (
 
 	"github.com/cupcake/sigil/gen"
 
-	"code.google.com/p/go.crypto/bcrypt"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type pageHook interface {
