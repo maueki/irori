@@ -21,6 +21,7 @@ coffee: $(COFFEESRC)
 	coffee -o $(COFFEEDIR) -c $^
 
 clean:
+	rm $(IRORI_BINNAME)
 	go clean
 	rm -f $(COFFEEDIR)/*.js
 
