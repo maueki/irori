@@ -1,5 +1,16 @@
 request = window.superagent
 
+marked.setOptions {
+  gfm: true
+  tables: true
+  breaks: false
+  pedantic: false
+  sanitize: true
+  smartLists: true
+  smartypants: false
+  langPrefix: ''
+}
+
 view = new Vue {
   el: '#view'
   data: {
@@ -7,6 +18,7 @@ view = new Vue {
       id: ''
       article: {
         title: ''
+        body: ''
       }
     }
     pagebody: ''
@@ -19,10 +31,7 @@ view = new Vue {
       .get('/api/pages/' + pageId)
       .end (err, res) =>
         @page = res.body
-    request
-      .get('/api/pages/' + pageId + '/body')
-      .end (err, res) =>
-        @pagebody = res.text
+        @pagebody = marked(@page.article.body)
         $('pre code', $('#pagebody')).each (i, e) ->
             hljs.highlightBlock(e)
 }
