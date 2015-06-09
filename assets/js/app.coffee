@@ -168,18 +168,6 @@ app.factory 'Group', [
       update: {method: 'PUT'}
     }]
 
-app.controller 'GroupCtrl', [
-  'Group', '$scope', (Group, $scope) ->
-    $scope.groups = Group.query()
-    $scope.group = new Group( name: "")
-
-    this.addGroup = () ->
-      console.log('add group: ', $scope.group)
-      $scope.group.$save ()->
-        $scope.group.name = ''
-        $scope.groups = Group.query()
-  ]
-
 app.controller 'EditGroupCtrl', [
   'Group', 'User', '$window', '$scope', (Group, User, $window, $scope) ->
     this.load = (id) ->
