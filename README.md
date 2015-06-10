@@ -24,6 +24,10 @@ $ ./irori -bind :9090
 
 Access to http://localhost:9090/
 
+# for developer
+
+see [decumentation](https://github.com/maueki/irori/blob/master/doc/devel.md)
+
 # Demo Page
 
 https://irori-demo.herokuapp.com/
