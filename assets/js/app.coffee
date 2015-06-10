@@ -1,5 +1,5 @@
 
-app = angular.module 'irori', ['ngResource', 'ngMessages', 'ui.utils']
+app = angular.module 'irori', ['ngResource', 'ngMessages', 'ui.utils', 'ngSanitize']
 
 # In AngularJS, Use '{$ $}' instead of '{{ }}' that is used by pongo2.
 app.config ($interpolateProvider) ->
@@ -82,16 +82,6 @@ app.controller 'PageUpdateCtrl', [
             p.enabled = true
   ]
 
-app.controller 'PageCtrl', [
-  'Page', 'User', '$window', '$scope', (Page, User, $window, $scope) ->
-    $scope.pages = Page.query (pages) ->
-      for page in pages
-        page.article.user = User.get {userId: page.article.userId}
-    $scope.ownpages = Page.query {pageId:'own'}, (pages)->
-      for page in pages
-        page.article.user = User.get {userId: page.article.userId}
-  ]
-
 app.controller 'PageSearchCtrl', [
   'Page', 'User', '$window', '$scope', (Page, User, $window, $scope) ->
 
@@ -99,6 +89,20 @@ app.controller 'PageSearchCtrl', [
       $scope.pages = Page.query {q: query },  (pages) ->
         for page in pages
           page.article.user = User.get {userId: page.article.userId}
+  ]
+
+app.controller 'PageViewCtrl', [
+  'Page', 'User', '$window', '$scope', (Page, User, $window, $scope) ->
+    this.load = (id) ->
+      hljs.initHighlightingOnLoad()
+      $scope.page = Page.get {'pageId': id}
+      $.ajax
+        type: 'GET'
+        url: '/api/pages/' + id + '/body'
+        success: (data) ->
+          $('#pagebody').html(data)
+          $('pre code', $('#pagebody')).each (i, e) ->
+            hljs.highlightBlock(e)
   ]
 
 app.directive 'pageEditor', () ->
@@ -134,15 +138,18 @@ app.directive 'pageInfo', () ->
     templateUrl: '/assets/html/page-info.html'
   }
 
-app.directive 'pageSidebar', () ->
+app.directive 'pageSidebar', ['User', (User) ->
   {
     restrict: 'E'
     templateUrl: '/assets/html/page-sidebar.html'
-  }
+    link: (scope, element) ->
+      scope.myself = User.getOwn()
+  }]
 
 app.factory 'User', [
   '$resource', ($resource) ->
-    $resource '/api/users/:userId', {Id: '@userId'}, {
+    $resource '/api/users/:userId', {userId: '@id'}, {
+      getOwn: {method: 'GET', params: {userId: 'own'}}
     }]
 
 app.factory 'Group', [
@@ -150,18 +157,6 @@ app.factory 'Group', [
     $resource '/api/groups/:groupId', {groupId: '@id'}, {
       update: {method: 'PUT'}
     }]
-
-app.controller 'GroupCtrl', [
-  'Group', '$scope', (Group, $scope) ->
-    $scope.groups = Group.query()
-    $scope.group = new Group( name: "")
-
-    this.addGroup = () ->
-      console.log('add group: ', $scope.group)
-      $scope.group.$save ()->
-        $scope.group.name = ''
-        $scope.groups = Group.query()
-  ]
 
 app.controller 'EditGroupCtrl', [
   'Group', 'User', '$window', '$scope', (Group, User, $window, $scope) ->

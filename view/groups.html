@@ -1,14 +1,14 @@
 {% extends "admin.html" %}
 
 {% block admin_content %}
-<div ng-controller="GroupCtrl as groupCtrl">
+<div id="groups">
   <h2>Groups</h2>
   <hr>
   <div class="row">
     <div class="col-xs-5">
-      <form ng-submit="groupCtrl.addGroup()" name="addGroup" class="form-inline">
+      <form v-on="submit:addGroup" name="addGroup" class="form-inline">
         <div class="form-group">
-          <input class="form-control" name="" type="text" ng-model="group.name" placeholder="Group Name"/>
+          <input class="form-control" name="" type="text" v-model="inputGroup" placeholder="Group Name"/>
           <input type="submit" value="Add Group" class="btn btn-primary"/>
         </div>
       </form>
@@ -17,7 +17,7 @@
 
   <div class="row">
     <div class="col-xs-12">
-      <table class="table group-table" ng-show="groups">
+      <table class="table group-table">
         <thead>
           <tr>
             <th></th>
@@ -25,7 +25,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr ng-repeat="group in groups">
+          <tr v-repeat="group: groups">
             <td></td>
             <td><a href="/admin/groups/{$ group.id $}">{$ group.name $}</a></td>
           </tr>
@@ -34,4 +34,8 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block exscript %}
+<script src="/assets/js/vue_groups.js"></script>
 {% endblock %}

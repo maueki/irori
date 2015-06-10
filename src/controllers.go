@@ -44,13 +44,11 @@ func groupListFilter(u *user) bson.M {
 }
 
 func apiGroupListGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	u := getSessionUser(c)
-
 	docdb := getDocDb(c)
 
 	groups := []group{}
 
-	err := docdb.Db.C("groups").Find(groupListFilter(u)).All(&groups)
+	err := docdb.Db.C("groups").Find(bson.M{}).All(&groups)
 	if err != nil {
 		log.Fatal("!!!!! get groups")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -339,6 +337,8 @@ func apiPageUpdateHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 func apiPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	pageId := c.URLParams["pageId"]
 
+	// FIXME: access level check
+
 	page, err := getPageFromDb(c, pageId)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
@@ -349,6 +349,32 @@ func apiPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
+}
+
+func apiPageBodyGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	pageId := c.URLParams["pageId"]
+
+	// FIXME: access level check
+
+	page, err := getPageFromDb(c, pageId)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	tpl, err := pongo2.FromString("{{text|markdown|sanitize}}")
+	if err != nil {
+		log.Println("apiPageBodyGetHandler: pongo2 failed")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = tpl.ExecuteWriter(pongo2.Context{"text": page.Article.Body}, w)
+	if err != nil {
+		log.Println("apiPageBodyGetHandler: ExecuteWriter Error")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 
 func apiOwnPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -492,6 +518,19 @@ func apiUserGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	js, err := json.Marshal(user)
 	if err != nil {
 		log.Println("apiUserListGetHandler: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
+func apiOwnUserGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
+	user := getSessionUser(c)
+	js, err := json.Marshal(user)
+	if err != nil {
+		log.Println("apiOwnUserGetHandler: ", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
