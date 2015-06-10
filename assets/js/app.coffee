@@ -82,16 +82,6 @@ app.controller 'PageUpdateCtrl', [
             p.enabled = true
   ]
 
-app.controller 'PageCtrl', [
-  'Page', 'User', '$window', '$scope', (Page, User, $window, $scope) ->
-    $scope.pages = Page.query (pages) ->
-      for page in pages
-        page.article.user = User.get {userId: page.article.userId}
-    $scope.ownpages = Page.query {pageId:'own'}, (pages)->
-      for page in pages
-        page.article.user = User.get {userId: page.article.userId}
-  ]
-
 app.controller 'PageSearchCtrl', [
   'Page', 'User', '$window', '$scope', (Page, User, $window, $scope) ->
 
