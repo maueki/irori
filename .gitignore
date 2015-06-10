@@ -4,3 +4,7 @@ irori
 assets/js/*.js
 
 *~
+
+# for npm
+node_modules/
+npm-debug.log
