@@ -265,7 +265,7 @@ func apiProjectsPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	if changeinfo.UpsertedId == nil {
 		// FIXME: project name already exists.
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "project name already exists", http.StatusInternalServerError)
 		return
 	}
 

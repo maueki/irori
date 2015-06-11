@@ -1,14 +1,14 @@
 {% extends "admin.html" %}
 
 {% block admin_content %}
-<div ng-controller="ProjectsCtrl as projCtrl">
+<div id="projects">
   <h2>Projects</h2>
   <hr>
   <div class="row">
     <div class="col-xs-5">
-      <form ng-submit="projCtrl.addProject()" name="addProject" class="form-inline">
+      <form v-on="submit:addProject" name="addProject" class="form-inline">
         <div class="form-group">
-          <input class="form-control" name="" type="text" ng-model="project.name" placeholder="Project Name"/>
+          <input class="form-control" name="" type="text" v-model="project.name" placeholder="Project Name"/>
           <input type="submit" value="Add Project" class="btn btn-primary"/>
         </div>
       </form>
@@ -17,7 +17,7 @@
 
   <div class="row">
     <div class="col-xs-12">
-      <table class="table projects-table" ng-show="projects">
+      <table class="table projects-table">
         <thead>
           <tr>
             <th></th>
@@ -25,7 +25,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr ng-repeat="proj in projects">
+          <tr v-repeat="proj: projects">
             <td></td>
             <td><a href="/admin/projects/{$ proj.id $}">{$ proj.name $}</a></td>
           </tr>
@@ -34,4 +34,8 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block exscript %}
+<script src="/assets/js/vue_projects.js"></script>
 {% endblock %}
