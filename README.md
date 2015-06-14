@@ -2,7 +2,7 @@ irori
 ======
 
 [![Stories in Ready](https://badge.waffle.io/maueki/irori.png?label=ready&title=Ready)](https://waffle.io/maueki/irori)
-[![Build Status](https://travis-ci.org/maueki/irori.svg)](https://travis-ci.org/maueki/irori)
+[![Circle CI](https://circleci.com/gh/maueki/irori.svg?style=svg)](https://circleci.com/gh/maueki/irori)
 
 # What's irori
 
