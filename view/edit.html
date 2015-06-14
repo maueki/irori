@@ -10,10 +10,25 @@
 {% endblock %}
 
 {% block content %}
-<form ng-submit="pageCtrl.updatePage()"  ng-controller="PageUpdateCtrl as pageCtrl" ng-init="pageCtrl.load('{{page.Id.Hex()}}')">
+<form v-on="submit: postPage" id="edit" data-config='{"pageId": "{{page.Id.Hex()}}"}'>
   <!-- sidebar -->
   <div class="col-xs-2">
-    <page-sidebar></page-sidebar>
+    <nav class="page-sidebar">
+      <h3>Projects</h3>
+      <ul class="project-list" v-repeat="proj: projects">
+        <li>
+          <input type="checkbox" v-model="proj.enabled">{$ proj.name $}</input>
+        </li>
+      </ul>
+      <h3>Access Level</h3>
+      <input type="radio" v-model="page.access" value="public">Public <br/>
+      <input type="radio" v-model="page.access" value="group">Group <br/>
+      <div class="group-list" v-show="page.access=='group'" v-repeat="group: groups">
+        <input type="checkbox" v-model="group.enabled">{$ group.name $}</input>
+      </div>
+      <div v-if="!page.author || '{{loginuser.Id.Hex()}}'==page.author">
+        <input type="radio" v-model="page.access" value="private" >Private</div> <br/>
+    </nav>
   </div><!-- col-xs-2 -->
   <!-- sidebar -->
 
@@ -21,7 +36,33 @@
   <div class="col-xs-10" id="page-editor">
 
     <!-- main editor -->
-    <page-editor></page-editor>
+    <div class="row">
+      <!-- title editor -->
+      <div class="col-xs-12">
+        <input type="text" name="title"
+               class="form-control input-lg" value="" placeholder="Title" v-model="page.article.title">
+      </div>
+    </div><!-- row -->
+
+    <!-- main editor -->
+    <div class="row" id="editpage-body-row">
+      <div class="col-xs-6" id="editpage-body-col-editor">
+        <div class="panel panel-default">
+          <div class="panel-heading"><i class="fa fa-pencil-square-o"></i> edit</div>
+          <div class="panel-body">
+            <textarea class="form-control" name="body" id="body-editor" v-model="page.article.body"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="col-xs-6" id="editpage-body-col-preview">
+        <div class="panel panel-default">
+          <div class="panel-heading"><i class="fa fa-laptop"></i> preview</div>
+          <div class="panel-body">
+            <div id="output" v-html="pageOutput"></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- row -->
 
     <!-- action btn -->
     <div class="row" id="editpage-action-btn-row">
@@ -30,21 +71,21 @@
         <button type="submit" class="btn btn-primary pull-right">
           {% else %}
           <button type="submit" class="btn btn-primary pull-right"
-            data-container="body" disabled="disable"
-            data-toggle="popover" data-placement="left" data-content="Disable for guest">
+                  data-container="body" disabled="disable"
+                  data-toggle="popover" data-placement="left" data-content="Disable for guest">
             {% endif %}
             <i class="fa fa-floppy-o"></i> Save
           </button>
-        </div>
       </div>
     </div>
-
   </div>
   <!-- editpage content -->
 </form>
 {% endblock %}
 
 {% block exscript %}
+<script src="/assets/js/vue_edit.js"></script>
+
 <script type="text/javascript">
 $(function () {
   $('[data-toggle="popover"]').popover('show')
@@ -69,4 +110,5 @@ $(function() {
 });
 
 </script>
+
 {% endblock %}
