@@ -50,7 +50,7 @@
         <div class="panel panel-default">
           <div class="panel-heading"><i class="fa fa-pencil-square-o"></i> edit</div>
           <div class="panel-body">
-            <textarea class="form-control" name="body" id="body-editor" v-model="page.article.body"></textarea>
+            <textarea class="form-control" name="body" id="body-editor" v-model="page.article.body" debounce="300"></textarea>
           </div>
         </div>
       </div>
@@ -58,7 +58,7 @@
         <div class="panel panel-default">
           <div class="panel-heading"><i class="fa fa-laptop"></i> preview</div>
           <div class="panel-body">
-            <div id="output" v-html="pageOutput"></div>
+            <div id="output" v-html="page.article.body | marked"></div>
           </div>
         </div>
       </div>

@@ -1,3 +1,15 @@
+marked.setOptions
+  gfm: true
+  tables: true
+  breaks: false
+  pedantic: false
+  sanitize: true
+  smartLists: true
+  smartypants: false
+  langPrefix: ''
+  highlight: (code) ->
+    return hljs.highlightAuto(code).value
+
 edit = new Vue {
   el: '#edit'
   data: {
@@ -15,22 +27,9 @@ edit = new Vue {
     projects: []
     pageOutput: ''
   }
+  filters:
+    marked: marked
   methods: {
-    transMarkdown: (markdown) ->
-      $.ajax
-        type: 'POST'
-        url: '/markdown'
-        data:
-          text: markdown
-        success: (data) ->
-          data
-
-    sendText: ->
-      @transMarkdown(@page.article.body).then (data) =>
-          @pageOutput = data
-          $("pre code", $("#output")).each (i, e) ->
-            hljs.highlightBlock(e)
-
     getPage: (pageId) ->
       $.ajax
         type: 'GET'
@@ -94,9 +93,4 @@ edit = new Vue {
         for p in @projects
           if p.id in @page.projects
             p.$set('enabled', true)
-
-    @$watch('page.article.body', (newval, oldval) =>
-      clearTimeout @timer
-      @timer = setTimeout @sendText, 2000
-    )
 }
