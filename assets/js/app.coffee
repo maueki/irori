@@ -12,18 +12,6 @@ app.factory 'Project', [
       update: {method: 'PUT'}
     }]
 
-app.controller 'ProjectsCtrl', [
-  'Project',  '$scope', (Project, $scope) ->
-    $scope.projects = Project.query()
-    $scope.project = new Project( name: "")
-    ctrl = this
-
-    this.addProject = () ->
-      console.log("addProject: ", $scope.project)
-      $scope.project.$save () ->
-        $scope.projects = Project.query()
-  ]
-
 app.controller 'ProjectEditCtrl', [
   'Project', '$window', '$scope', (Project, $window, $scope) ->
     this.load = (id) ->

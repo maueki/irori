@@ -375,6 +375,7 @@ func markdownPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
 	text := r.FormValue("text")
+	w.Header().Set("Content-Type", "text/html")
 	err = tpl.ExecuteWriter(pongo2.Context{"text": text}, w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

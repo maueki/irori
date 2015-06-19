@@ -7,6 +7,10 @@ cache:
 language: go
 before_install:
 - sudo apt-get install -y coffeescript
+- npm install -g bower
+- npm install -g gulp
+- bower install -f
+- npm install
 script:
 - make -j4
 - make test
