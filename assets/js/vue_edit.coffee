@@ -8,7 +8,7 @@ marked.setOptions
   smartypants: false
   langPrefix: ''
   highlight: (code) ->
-    return highlightAuto(code).value
+    return hljs.highlightAuto(code).value
 
 edit = new Vue {
   el: '#edit'
@@ -93,9 +93,4 @@ edit = new Vue {
         for p in @projects
           if p.id in @page.projects
             p.$set('enabled', true)
-
-    @$watch('page.article.body', (newval, oldval) =>
-      clearTimeout @timer
-      @timer = setTimeout @sendText, 2000
-    )
 }
