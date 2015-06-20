@@ -1,6 +1,6 @@
 request = window.superagent
 
-marked.setOptions {
+marked.setOptions
   gfm: true
   tables: true
   breaks: false
@@ -8,30 +8,22 @@ marked.setOptions {
   sanitize: true
   smartLists: true
   smartypants: false
-  langPrefix: ''
-}
+  highlight: (code, lang) ->
+    return hljs.highlightAuto(code, [lang]).value
 
-view = new Vue {
+view = new Vue
   el: '#view'
-  data: {
-    page: {
+  data:
+    page:
       id: ''
-      article: {
+      article:
         title: ''
         body: ''
-      }
-    }
-    pagebody: ''
-  }
-  methods: {
-  }
+  filters:
+    marked: marked
   created: () ->
     pageId = $('#view').data('config').pageId
     request
       .get('/api/pages/' + pageId)
       .end (err, res) =>
         @page = res.body
-        @pagebody = marked(@page.article.body)
-        $('pre code', $('#pagebody')).each (i, e) ->
-            hljs.highlightBlock(e)
-}

@@ -6,9 +6,8 @@ marked.setOptions
   sanitize: true
   smartLists: true
   smartypants: false
-  langPrefix: ''
-  highlight: (code) ->
-    return hljs.highlightAuto(code).value
+  highlight: (code, lang) ->
+    return hljs.highlightAuto(code, [lang]).value
 
 edit = new Vue {
   el: '#edit'
@@ -64,9 +63,6 @@ edit = new Vue {
     setLeavingMessage('You\'re about to throw away this text without posting it.')
 
   compiled: ->
-    @timer = null
-    hljs.initHighlightingOnLoad()
-
     procs = []
     procs.push(
       @getGroups().then (data) =>

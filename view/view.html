@@ -7,7 +7,6 @@
 <script src="http://cdnjs.cloudflare.com/ajax/libs/marked/0.3.2/marked.min.js"></script>
 <link href="/assets/css/viewpage.css" rel="stylesheet">
 <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.2/styles/default.min.css"/>
-<script>hljs.initHighlightingOnLoad();</script>
 {% endblock %}
 
 {% block content %}
@@ -35,7 +34,7 @@
 	</div>
 	<div class="viewpage-main">
 		<div class="container">
-			<div id="pagebody" v-html="pagebody"></div>
+			<div id="pagebody" v-html="page.article.body | marked"></div>
 		</div>
 	</div>
 </div>
