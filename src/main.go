@@ -367,21 +367,6 @@ func logoutPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/home", http.StatusFound)
 }
 
-func markdownPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
-	tpl, err := pongo2.FromString("{{text|markdown|sanitize}}")
-	if err != nil {
-		panic(err)
-	}
-
-	r.ParseForm()
-	text := r.FormValue("text")
-	w.Header().Set("Content-Type", "text/html")
-	err = tpl.ExecuteWriter(pongo2.Context{"text": text}, w)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
 func staticPageHandler(path string) func(c web.C, w http.ResponseWriter, r *http.Request) {
 	return func(c web.C, w http.ResponseWriter, r *http.Request) {
 		err := executeWriterFromFile(w, path, &pongo2.Context{})
@@ -519,7 +504,6 @@ func setRoute(db *mgo.Database) {
 	apiMux.Post("/api/projects", applyFilter(apiProjectsPostHandler, apiNeedPermission(ADMIN)))
 
 	apiMux.Get("/api/pages/own", apiOwnPageGetHandler)
-	apiMux.Get("/api/pages/:pageId/body", apiPageBodyGetHandler)
 	apiMux.Get("/api/pages/:pageId", apiPageGetHandler)
 	apiMux.Get("/api/pages", apiPageListGetHandler)
 	apiMux.Post("/api/pages/:pageId", applyFilter(apiPageUpdateHandler, apiNeedPermission(EDITOR)))
@@ -547,11 +531,6 @@ func setRoute(db *mgo.Database) {
 	pageMux.Get("/docs/:pageId", viewPageGetHandler)
 	pageMux.Get("/docs/:pageId/edit", editPageGetHandler)
 
-	// Mux : convert Markdown to HTML which is send by Ajax
-	mdMux := web.New()
-	mdMux.Use(needLogin)
-	mdMux.Post("/markdown", markdownPostHandler)
-
 	homeMux := web.New()
 	homeMux.Use(needLogin)
 	homeMux.Get("/home", staticPageHandler("view/home-pages.html"))
@@ -571,7 +550,6 @@ func setRoute(db *mgo.Database) {
 	goji.Handle("/docs", pageMux)
 	goji.Handle("/home", homeMux)
 	goji.Handle("/project/*", projectMux)
-	goji.Handle("/markdown", mdMux)
 	goji.Handle("/action/*", loginUserActionMux)
 	goji.Handle("/admin/*", adminMux)
 	goji.Handle("/admin", adminMux)
