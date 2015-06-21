@@ -199,10 +199,12 @@ func createNewPageGetHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 		log.Fatal("@@@ projects")
 	}
 
-	err = executeWriterFromFile(w, "view/newpage.html",
+	err = executeWriterFromFile(w, "view/edit.html",
 		&pongo2.Context{
-			"isEditor": user.HasPermission(EDITOR),
-			"projects": projects,
+			"loginuser": user,
+			"page":      page{},
+			"isEditor":  user.HasPermission(EDITOR),
+			"projects":  projects,
 		})
 
 	if err != nil {
