@@ -79,60 +79,11 @@ app.controller 'PageSearchCtrl', [
           page.article.user = User.get {userId: page.article.userId}
   ]
 
-app.controller 'PageViewCtrl', [
-  'Page', 'User', '$window', '$scope', (Page, User, $window, $scope) ->
-    this.load = (id) ->
-      hljs.initHighlightingOnLoad()
-      $scope.page = Page.get {'pageId': id}
-      $.ajax
-        type: 'GET'
-        url: '/api/pages/' + id + '/body'
-        success: (data) ->
-          $('#pagebody').html(data)
-          $('pre code', $('#pagebody')).each (i, e) ->
-            hljs.highlightBlock(e)
-  ]
-
-app.directive 'pageEditor', () ->
-  {
-    restrict: 'E'
-    templateUrl: '/assets/html/page-editor.html'
-    link: (scope, element) ->
-      # FIXME
-      setLeavingMessage('You\'re about to throw away this text without posting it.')
-
-      timer = null
-      hljs.initHighlightingOnLoad()
-
-      scope.sendText = () ->
-        $.ajax
-          type: 'POST'
-          url: '/markdown'
-          data:
-            text: $('#body-editor')[0].value
-          success: (data) ->
-            $('#output', element).html(data)
-            $("pre code", $("#output")).each (i, e) ->
-              hljs.highlightBlock(e)
-
-      scope.$watch 'page.article.body', (value) ->
-        clearTimeout timer
-        timer = setTimeout scope.sendText, 2000
-  }
-
 app.directive 'pageInfo', () ->
   {
     restrict: 'E'
     templateUrl: '/assets/html/page-info.html'
   }
-
-app.directive 'pageSidebar', ['User', (User) ->
-  {
-    restrict: 'E'
-    templateUrl: '/assets/html/page-sidebar.html'
-    link: (scope, element) ->
-      scope.myself = User.getOwn()
-  }]
 
 app.factory 'User', [
   '$resource', ($resource) ->

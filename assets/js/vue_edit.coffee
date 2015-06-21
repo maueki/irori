@@ -51,16 +51,28 @@ edit = new Vue {
       page = JSON.parse(JSON.stringify(@page)) #FIXME
       page.projects = (p.id for p in @projects when p.enabled)
       page.groups = (g.id for g in @groups when g.enabled)
-      $.ajax
-        type: 'POST'
-        url: '/api/pages/' + $('#edit').data('config').pageId
-        data: JSON.stringify(page)
-        success: (res) ->
-          window.location.href = '/docs/' + res.id
+      if @isNew
+        $.ajax
+          type: 'POST'
+          url: '/api/pages'
+          data: JSON.stringify(page)
+          success: (res) ->
+            window.location.href = '/docs/' + res.id
+      else
+        $.ajax
+          type: 'POST'
+          url: '/api/pages/' + $('#edit').data('config').pageId
+          data: JSON.stringify(page)
+          success: (res) ->
+            window.location.href = '/docs/' + res.id
   }
   created: ->
     # FIXME
     setLeavingMessage('You\'re about to throw away this text without posting it.')
+
+    @isNew = false
+    if $('#edit').data('config').pageId == ''
+      @isNew = true
 
   compiled: ->
     procs = []
