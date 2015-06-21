@@ -88,6 +88,10 @@ func (u *user) HasPermission(perm permission) bool {
 	return ok && b
 }
 
+func (u *user) Is_admin() *pongo2.Value {
+	return pongo2.AsValue(u.HasPermission(ADMIN))
+}
+
 type docdb struct {
 	Db *mgo.Database
 }
@@ -354,7 +358,9 @@ func loginPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusUnauthorized)
-	executeWriterFromFile(w, "view/login.html", &pongo2.Context{"error": "Incorrect username or password."})
+	executeWriterFromFile(w, "view/login.html", &pongo2.Context{
+		"error": "Incorrect username or password.",
+	})
 }
 
 func rootHandler(c web.C, w http.ResponseWriter, r *http.Request) {
@@ -371,7 +377,10 @@ func logoutPostHandler(c web.C, w http.ResponseWriter, r *http.Request) {
 
 func staticPageHandler(path string) func(c web.C, w http.ResponseWriter, r *http.Request) {
 	return func(c web.C, w http.ResponseWriter, r *http.Request) {
-		err := executeWriterFromFile(w, path, &pongo2.Context{})
+		user := getSessionUser(c)
+		err := executeWriterFromFile(w, path, &pongo2.Context{
+			"loginuser": user,
+		})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
