@@ -35,6 +35,9 @@
       <ul class="dropdown-menu">
         <li><a href="#">マイページ</a></li>
         <li><a href="/profile">設定</a></li>
+        {% if loginuser.Is_admin %}
+        <li><a href="/admin">管理</a></li>
+        {% endif %}
         <li class="divider"></li>
         <li><a href="/logout" data-method="post" >ログアウト</a></li>
       </ul>
